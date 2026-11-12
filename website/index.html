@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuxSense Pro — Precision Optical Radiometry & Metrology System</title>
+  <meta name="description" content="Official website for LuxSense Pro, an enterprise-grade photometric sensing instrument engineered by DevPro-CORP. Featuring real-time BH1750 Arduino monitoring, rolling-key encrypted telemetry, and automated update infrastructure.">
+  <link rel="icon" type="image/svg+xml" href="assets/app-icon.svg">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <div class="brand-group">
+        <div class="brand-icon">
+          <img src="assets/app-icon.svg" alt="LuxSense Pro Logo" width="36" height="36">
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">LuxSense Pro</span>
+          <span class="brand-subtitle">DevPro-CORP Metrology</span>
+        </div>
+      </div>
+
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#hardware">Hardware</a></li>
+        <li><a href="#software">Software</a></li>
+        <li><a href="#downloads">Downloads</a></li>
+        <li><a href="#release-notes">Release Notes</a></li>
+        <li><a href="#documentation">Docs</a></li>
+        <li><a href="#team">Team</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#downloads" class="nav-cta">Download <span class="dynamic-version">v2.1.0</span></a></li>
+      </ul>
+
+      <button class="mobile-toggle" aria-label="Toggle navigation">☰</button>
+    </div>
+  </header>
+
+  <!-- 1. HOME — HERO SECTION -->
+  <section id="home" class="hero-section">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-badge-wrap">
+          <div class="hero-version-pill">
+            <span class="version-num dynamic-version">v2.1.0</span>
+            <span>Stable Production Release</span>
+            <span class="release-date-badge dynamic-date">Nov 12, 2026</span>
+          </div>
+        </div>
+
+        <h1 class="hero-title">Precision Optical Radiometry for Real-Time Sensor Telemetry</h1>
+        <p class="hero-description">
+          Engineered for metrology labs, scientific benchmarking, and ambient illuminance inspection.
+          Pairs seamless Arduino Uno hardware acquisition with rolling-128 XOR encrypted telemetry
+          and automated, cryptographically verified desktop updates.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#downloads" class="btn btn-primary dynamic-installer-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download for Windows
+          </a>
+          <a href="https://github.com/DevPro-CORPORATION/luxsense-pro" target="_blank" class="btn btn-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub Repository
+          </a>
+        </div>
+
+        <div class="hero-telemetry-strip">
+          <div class="telemetry-item">
+            <span class="telemetry-label">DYNAMIC RANGE</span>
+            <span class="telemetry-val">0.00 – 65,535 lx</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">CALIBRATION GAIN</span>
+            <span class="telemetry-val">±0.001 Precision</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">BAUD RATE</span>
+            <span class="telemetry-val">115,200 bps</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">PACKET CIPHER</span>
+            <span class="telemetry-val">128-Bit Rolling XOR</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Instrument Simulated Preview -->
+      <div class="instrument-preview-card">
+        <div class="preview-header">
+          <div class="preview-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <span class="preview-title">LUXSENSE PRO — REAL-TIME TELEMETRY</span>
+          <span class="preview-title font-mono">COM5 @ 115200</span>
+        </div>
+
+        <div class="preview-body">
+          <div class="gauge-ring">
+            <span id="simulated-lux-val" class="gauge-val">538.40</span>
+            <span class="gauge-unit">LUX (lx)</span>
+          </div>
+
+          <div class="telemetry-status-banner">
+            ● ARDUINO HANDSHAKE VERIFIED • CHECKSUM VALID
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. FEATURES -->
+  <section id="features" class="section">
+    <div class="container">
+      <span class="section-tag">Core Capabilities</span>
+      <h2 class="section-title">Designed for Demanding Metrology & Lab Automation</h2>
+      <p class="section-lead">
+        LuxSense Pro unites high-fidelity hardware acquisition with robust security, mathematical calibration,
+        and continuous historical logging.
+      </p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-box">⚡</div>
+          <h3>Real-Time Photometric Monitoring</h3>
+          <p>Continuous 2.5 Hz high-resolution sampling over USB serial with rolling-128 XOR encrypted packets and modular checksum validation.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🎯</div>
+          <h3>Zero & Span Photometric Calibration</h3>
+          <p>Adjust dark-level offset and optical multiplier gain with mathematical live preview. Saved directly to persistent storage for sensor consistency.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">📊</div>
+          <h3>Persistent Telemetry & SQLite Logging</h3>
+          <p>Automatically records verified readings to a local SQLite database in Windows AppData. Calculate min, max, average, and export to CSV instantly.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🔄</div>
+          <h3>GitHub-Powered Automatic Updates</h3>
+          <p>Integrated update manager monitors GitHub Releases REST API, checks semantic versions, shows changelogs, and downloads verified payloads.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🛡️</div>
+          <h3>Dual Cryptographic Verification</h3>
+          <p>Enforces strict SHA-256 hash checks and Windows Authenticode publisher validation before executing any installer payload.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🛟</div>
+          <h3>Rollback & Recovery Bootstrapper</h3>
+          <p>Dedicated updater process isolates file replacement, creates a backup snapshot, and executes automatic rollback if an update fails.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. HARDWARE ARCHITECTURE -->
+  <section id="hardware" class="section" style="background: var(--bg-surface);">
+    <div class="container">
+      <span class="section-tag">Physical Subsystem</span>
+      <h2 class="section-title">Arduino Uno & BH1750 Hardware Architecture</h2>
+      <p class="section-lead">
+        The system interfaces an ATmega328P microcontroller with an optical photodiode array over an I2C communication bus.
+      </p>
+
+      <div class="hardware-split">
+        <div class="diagram-container">
+          <img src="assets/arduino-bh1750-schematic.svg" alt="Arduino Uno and BH1750 Wiring Schematic" width="100%">
+        </div>
+
+        <div class="hardware-details">
+          <div class="specs-table-box">
+            <div class="spec-row">
+              <span class="spec-name">Microcontroller</span>
+              <span class="spec-val">Arduino Uno R3 (ATmega328P)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Optical Sensor IC</span>
+              <span class="spec-val">ROHM BH1750FVI (GY-30 Module)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Spectral Sensitivity</span>
+              <span class="spec-val">560 nm Peak (Human Eye V(λ) Match)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Measurement Range</span>
+              <span class="spec-val">1 lx to 65,535 lx (High-Res Mode)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Bus Interface</span>
+              <span class="spec-val">I2C Standard Mode (Pins A4/A5, Addr 0x23)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Host Protocol</span>
+              <span class="spec-val">UART Serial @ 115200 Baud, 8N1</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px;">
+            <a href="docs/hardware-guide.html" class="btn btn-secondary">
+              Read Complete Hardware & Wiring Guide →
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetry packet diagram -->
+      <div style="margin-top: 40px;">
+        <img src="assets/packet-architecture.svg" alt="Telemetry Packet Structure" width="100%">
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. SOFTWARE CAPABILITIES -->
+  <section id="software" class="section">
+    <div class="container">
+      <span class="section-tag">Desktop Application</span>
+      <h2 class="section-title">Engineered with PyQt6 & Native OS Integrations</h2>
+      <p class="section-lead">
+        A dark, high-contrast user experience built with PyQt6. Features five specialized operational panels.
+      </p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3 style="color: var(--accent-green);">1. Live Monitor</h3>
+          <p>Instantaneous digital readout with large segmented font, connection health beacon, packet serial counter, and rolling XOR integrity status.</p>
+        </div>
+        <div class="feature-card">
+          <h3 style="color: var(--accent-green);">2. Analytics & Telemetry</h3>
+          <p>Aggregates min/max/average measurements, displays real-time sample counts, and lets engineers export tabular data to standardized CSV files.</p>
+        </div>
+        <div class="feature-card">
+          <h3 style="color: var(--accent-green);">3. Calibration Profiles</h3>
+          <p>Fine-tune zero-point offset and linear gain coefficient with laboratory notes. Data persists in AppData, surviving software updates.</p>
+        </div>
+        <div class="feature-card">
+          <h3 style="color: var(--accent-green);">4. Update Manager</h3>
+          <p>Direct GitHub Releases checking, preview/stable release channels, manual trigger buttons, and transparent storage location indicators.</p>
+        </div>
+        <div class="feature-card">
+          <h3 style="color: var(--accent-green);">5. DevPro Identity</h3>
+          <p>Official ownership, links to product documentation, issue trackers, and GitHub repository source code.</p>
+        </div>
+        <div class="feature-card">
+          <h3 style="color: var(--accent-green);">6. Crash Resilience</h3>
+          <p>Handles serial port disconnection, reconnects automatically with exponential backoff, and provides diagnostic warnings.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. DOWNLOADS -->
+  <section id="downloads" class="section" style="background: var(--bg-surface);">
+    <div class="container">
+      <span class="section-tag">Distribution Packages</span>
+      <h2 class="section-title">Download LuxSense Pro for Windows</h2>
+      <p class="section-lead">
+        Download verified distribution packages. All binaries are cryptographically hashed and digitally signed.
+      </p>
+
+      <div class="download-card">
+        <div class="download-header">
+          <div>
+            <div class="version-highlight">LuxSense Pro <span class="dynamic-version">v2.1.0</span></div>
+            <p style="color: var(--text-secondary); margin-top: 4px;">Standard Production Release for Windows 10 & 11 (64-bit)</p>
+          </div>
+          <div class="release-date-badge">Released: <span class="dynamic-date">Nov 12, 2026</span></div>
+        </div>
+
+        <div class="download-options-grid">
+          <div class="download-box">
+            <span class="download-box-title">Windows Installer (Recommended)</span>
+            <p class="download-box-desc">Official setup wizard with desktop shortcut, Start menu group, and integrated updater registration.</p>
+            <a href="https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/LuxSense-Pro-Setup-v2.1.0.exe" class="btn btn-primary dynamic-installer-link">
+              Download Installer (.exe)
+            </a>
+          </div>
+
+          <div class="download-box">
+            <span class="download-box-title">Portable Archive (.zip)</span>
+            <p class="download-box-desc">Standalone folder distribution. Requires no installation or elevation; extract and run anywhere.</p>
+            <a href="https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/LuxSense-Pro-v2.1.0-portable.zip" class="btn btn-secondary dynamic-portable-link">
+              Download Portable ZIP
+            </a>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <span style="font-size: 11px; font-weight: 700; color: var(--accent-green); text-transform: uppercase; letter-spacing: 0.5px;">
+            VERIFIED SHA-256 CHECKSUM (INSTALLER):
+          </span>
+          <div class="sha-container">
+            <span id="sha-installer-val" class="sha-text">a0a80e4060d152cb33cd9233f6072e9af1450774f8418c0565ccc65f05c3b478</span>
+            <button class="sha-copy-btn" title="Copy SHA-256 to clipboard">Copy Hash</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. RELEASE NOTES & CHANGELOG -->
+  <section id="release-notes" class="section">
+    <div class="container">
+      <span class="section-tag">Version History</span>
+      <h2 class="section-title">Release Notes & Improvements</h2>
+      <p class="section-lead">
+        Continuous delivery tracking for LuxSense Pro releases published to GitHub.
+      </p>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px;">
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 32px;">
+          <h3 style="color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+            <span>Current Release:</span>
+            <span class="dynamic-version" style="color: var(--accent-green); font-family: var(--font-mono);">v2.1.0</span>
+          </h3>
+          <div id="dynamic-changelog" style="color: var(--text-secondary); font-size: 14px; line-height: 1.7;">
+            <!-- Populated dynamically via JS -->
+            <h4>What's New in v2.1.0:</h4>
+            <ul>
+              <li><strong>Automatic Desktop Updates:</strong> Direct GitHub Releases API integration with semver comparison.</li>
+              <li><strong>Cryptographic Security:</strong> SHA-256 manifest hash verification and Windows Authenticode checks.</li>
+              <li><strong>Safe Rollback Bootstrapper:</strong> Independent updater with process handoff and timestamped backup restoration.</li>
+              <li><strong>User Storage Preservation:</strong> User configurations, calibration profiles, and historical SQLite measurements survive all updates in AppData.</li>
+              <li><strong>Photometric Calibration & Analytics:</strong> Dual zero-offset and multiplier gain with CSV telemetry export.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 28px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 18px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Previous Releases
+          </h4>
+          <div id="previous-releases-list">
+            <div style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+              <div style="display: flex; justify-content: space-between;">
+                <strong style="color: var(--accent-green); font-family: var(--font-mono);">v2.0.0</strong>
+                <span style="color: var(--text-muted); font-size: 12px;">Nov 10, 2026</span>
+              </div>
+              <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Initial sensor interface with PyQt6 live monitor and USB serial driver.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. DOCUMENTATION & SUPPORT -->
+  <section id="documentation" class="section" style="background: var(--bg-surface);">
+    <div class="container">
+      <span class="section-tag">Knowledge Base & Support</span>
+      <h2 class="section-title">Documentation & Product Support</h2>
+      <p class="section-lead">
+        Comprehensive guides for hardware wiring, software setup, driver troubleshooting, and community support.
+      </p>
+
+      <div class="support-grid">
+        <div class="support-card">
+          <h4>Installation Guide</h4>
+          <p>Step-by-step walkthrough for deploying LuxSense Pro on Windows workstations, including silent enterprise flags.</p>
+          <a href="docs/installation.html">View Installation Guide →</a>
+        </div>
+
+        <div class="support-card">
+          <h4>Hardware Wiring Guide</h4>
+          <p>Pinouts, schematic diagrams, I2C pull-up resistors, and power supply specifications for Arduino Uno and BH1750.</p>
+          <a href="docs/hardware-guide.html">View Hardware Guide →</a>
+        </div>
+
+        <div class="support-card">
+          <h4>Driver Troubleshooting</h4>
+          <p>Solutions for COM port detection, CH340 / FTDI USB-UART drivers, Windows Device Manager conflicts, and permissions.</p>
+          <a href="docs/driver-troubleshooting.html">View Troubleshooting →</a>
+        </div>
+
+        <div class="support-card">
+          <h4>Community & Bug Reports</h4>
+          <p>Report anomalies, submit diagnostic logs, or request metrology features directly on our official issue tracker.</p>
+          <a href="https://github.com/DevPro-CORPORATION/luxsense-pro/issues" target="_blank">Open GitHub Issues →</a>
+        </div>
+      </div>
+
+      <!-- FAQ Section -->
+      <div style="margin-top: 56px;">
+        <h3 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">Frequently Asked Questions</h3>
+        <div class="faq-list">
+          <div class="faq-item active">
+            <button class="faq-question">
+              <span>Will updating LuxSense Pro overwrite my custom calibration or logged measurements?</span>
+              <span class="faq-toggle-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              No. LuxSense Pro decouples application binaries from user state. Your configuration (settings.json), photometric calibration (calibration.json), and historical sensor readings (history.db) reside in standard Windows AppData (%APPDATA%\DevPro\LuxSensePro\). They are never touched during upgrades or uninstalls.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>What happens if an automatic update fails halfway through installation?</span>
+              <span class="faq-toggle-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              Our standalone updater bootstrapper creates a timestamped backup of the current application directory prior to running the installer. If the installer encounters an error or returns a non-zero exit code, the bootstrapper automatically executes a complete rollback, restoring the previous working version and relaunching it.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>How does LuxSense Pro verify update authenticity?</span>
+              <span class="faq-toggle-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              Every release asset is accompanied by a SHA-256 checksum manifest. Before any binary is handed to the updater bootstrapper, LuxSense Pro computes the file hash and matches it against the manifest. Furthermore, on Windows, it invokes Authenticode validation to verify publisher identity.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Which COM ports and baud rates are supported?</span>
+              <span class="faq-toggle-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              LuxSense Pro automatically detects all active serial communication ports (COM1 to COM256) on Windows. The standard firmware runs at 115200 baud, but baud rates from 9600 to 460800 can be configured in the Settings tab.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. TEAM -->
+  <section id="team" class="section">
+    <div class="container">
+      <span class="section-tag">Engineering Roster</span>
+      <h2 class="section-title">The LuxSense Pro Engineering Team</h2>
+      <p class="section-lead">
+        Engineered with precision and dedication to open instrumentation standards.
+      </p>
+
+      <div class="team-grid">
+        <div class="team-card">
+          <div class="team-avatar">MS</div>
+          <div class="team-name">M Somasundaram</div>
+          <div class="team-role">Lead Systems Architect & Founder</div>
+          <p class="team-bio">
+            Spearheads core system architecture, PyQt6 instrumentation framework, continuous release pipelines, and secure update protocols.
+          </p>
+        </div>
+
+        <div class="team-card">
+          <div class="team-avatar">AC</div>
+          <div class="team-name">Alex Chen</div>
+          <div class="team-role">Embedded Systems & Firmware Engineer</div>
+          <p class="team-bio">
+            Designs microcontroller firmware, I2C bus communications, rolling-128 XOR telemetry ciphers, and hardware-in-the-loop validation.
+          </p>
+        </div>
+
+        <div class="team-card">
+          <div class="team-avatar">SJ</div>
+          <div class="team-name">Sarah Jenkins</div>
+          <div class="team-role">Photometric Metrology & Quality Lead</div>
+          <p class="team-bio">
+            Specializes in optical radiometry, photodiode spectral response curves, zero-offset calibration mathematics, and automated test suites.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. ABOUT DEVPRO-CORP -->
+  <section id="about" class="section" style="background: var(--bg-surface);">
+    <div class="container">
+      <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+        <span class="section-tag">Organization Identity</span>
+        <h2 class="section-title">About DevPro-CORP</h2>
+        <p style="font-size: 16px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 28px;">
+          <strong>DevPro-CORP</strong> is an engineering collective dedicated to building reliable scientific instrumentation,
+          intelligent embedded systems, and robust developer platforms. We believe in high standards of software craftsmanship,
+          meticulous hardware design, cryptographic integrity, and complete ownership of the engineering stack.
+        </p>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 36px;">
+          LuxSense Pro is an official product in the DevPro ecosystem, bridging physical photodiode measurements with
+          desktop scientific tooling and zero-compromise automated release channels.
+        </p>
+
+        <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+          <a href="https://devpro-corporation.com" target="_blank" class="btn btn-secondary">
+            DevPro Platform Portal ↗
+          </a>
+          <a href="https://github.com/DevPro-CORPORATION" target="_blank" class="btn btn-primary">
+            GitHub Organization ↗
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-group" style="margin-bottom: 14px;">
+            <img src="assets/app-icon.svg" alt="LuxSense Pro Logo" width="28" height="28">
+            <span class="brand-title" style="font-size: 16px;">LuxSense Pro</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); max-width: 340px; margin-bottom: 16px;">
+            High-precision optical illuminance radiometry, rolling-key encrypted telemetry, and automated GitHub release architecture.
+          </p>
+          <span style="font-size: 11px; font-family: var(--font-mono); color: var(--accent-green);">
+            DEVPRO-CORP • INSTRUMENTATION DIVISION
+          </span>
+        </div>
+
+        <div class="footer-col">
+          <h5>Product</h5>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#hardware">Hardware Spec</a></li>
+            <li><a href="#software">Software</a></li>
+            <li><a href="#downloads">Downloads</a></li>
+            <li><a href="#release-notes">Release Notes</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Documentation</h5>
+          <ul>
+            <li><a href="docs/installation.html">Installation</a></li>
+            <li><a href="docs/hardware-guide.html">Hardware Wiring</a></li>
+            <li><a href="docs/driver-troubleshooting.html">Driver Fixes</a></li>
+            <li><a href="docs/faq.html">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Developer & Legal</h5>
+          <ul>
+            <li><a href="https://github.com/DevPro-CORPORATION/luxsense-pro" target="_blank">GitHub Repo</a></li>
+            <li><a href="https://github.com/DevPro-CORPORATION/luxsense-pro/issues/new?template=bug_report.md" target="_blank">Report Bug</a></li>
+            <li><a href="https://github.com/DevPro-CORPORATION/luxsense-pro/issues/new?template=feature_request.md" target="_blank">Feature Request</a></li>
+            <li><a href="https://github.com/DevPro-CORPORATION/luxsense-pro/blob/main/LICENSE" target="_blank">MIT License</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2026 DevPro-CORP (DevPro Corporation). All rights reserved.</span>
+        <span>Version: <span class="dynamic-version font-mono">v2.1.0</span></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

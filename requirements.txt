@@ -1,0 +1,8 @@
+# LuxSense Pro Dependencies
+PyQt6>=6.6.0
+pyserial>=3.5
+packaging>=23.2
+pefile>=2023.2.7
+pywin32-ctypes>=0.2.2
+pytest>=7.4.0
+pyinstaller>=6.0.0

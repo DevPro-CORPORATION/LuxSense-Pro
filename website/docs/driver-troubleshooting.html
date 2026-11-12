@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driver Troubleshooting Guide — LuxSense Pro</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/app-icon.svg">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body style="background: #0E1013;">
+  <header class="site-header">
+    <div class="container nav-container">
+      <div class="brand-group">
+        <a href="../index.html" style="display: flex; align-items: center; gap: 12px; color: inherit;">
+          <img src="../assets/app-icon.svg" alt="LuxSense Pro" width="32" height="32">
+          <span class="brand-title">LuxSense Pro Docs</span>
+        </a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="../index.html">← Back to Product Home</a></li>
+        <li><a href="installation.html">Installation</a></li>
+        <li><a href="hardware-guide.html">Hardware Guide</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main class="container" style="padding: 60px 0; max-width: 860px;">
+    <span class="section-tag">Diagnostics & Troubleshooting</span>
+    <h1 class="section-title">USB Serial Driver Troubleshooting</h1>
+    <p class="section-lead">Resolving COM port enumeration errors, missing USB-UART bridge drivers, and baud rate mismatches.</p>
+
+    <article style="color: var(--text-secondary); line-height: 1.8;">
+      <h2 style="color: #fff; margin: 30px 0 12px;">Symptom 1: No COM Port Appears in Settings</h2>
+      <p>If the port dropdown only shows default fallback entries or scanning returns no devices:</p>
+      <ul style="margin-left: 20px; margin-bottom: 24px;">
+        <li><strong>Check Device Manager:</strong> Press <kbd>Win + X</kbd> and open <em>Device Manager</em>. Look under <strong>Ports (COM & LPT)</strong> or <strong>Other Devices</strong>.</li>
+        <li><strong>CH340/CH341 USB Bridge:</strong> Many Uno clones use the WCH CH340 chip. If a yellow exclamation mark appears next to <em>USB-SERIAL CH340</em>, download and install the official WCH CH341SER driver.</li>
+        <li><strong>Genuine Arduino Uno (ATmega16U2):</strong> Genuine boards use the official Arduino driver bundled with Arduino IDE (located at <code>C:\Program Files (x86)\Arduino\drivers\</code>).</li>
+        <li><strong>USB Cable Quality:</strong> Some Micro-USB/USB-B cables are power-only. Ensure you are using a 4-conductor data-capable cable.</li>
+      </ul>
+
+      <h2 style="color: #fff; margin: 30px 0 12px;">Symptom 2: Connection Error: Access is Denied (PermissionError)</h2>
+      <p>On Windows, a COM port can only be opened by a single process at any one time.</p>
+      <ul style="margin-left: 20px; margin-bottom: 24px;">
+        <li>Ensure the <strong>Arduino IDE Serial Monitor</strong> or <strong>Serial Plotter</strong> is closed before launching LuxSense Pro.</li>
+        <li>Check whether another application (such as Cura, MATLAB, or PuTTY) is occupying the COM port.</li>
+      </ul>
+
+      <h2 style="color: #fff; margin: 30px 0 12px;">Symptom 3: Handshake Timeout ("No valid Arduino handshake received")</h2>
+      <ul style="margin-left: 20px; margin-bottom: 24px;">
+        <li>When an Arduino Uno serial port is opened, the DTR line pulses and resets the ATmega328P. LuxSense Pro pauses 2.0 seconds to allow the bootloader to finish before issuing the <code>DISCOVER_LUX_SENSOR</code> challenge.</li>
+        <li>Verify that the firmware was compiled with <code>BAUD_RATE = 115200</code>. If using a custom sketch with 9600 baud, change the baud rate selector in the LuxSense Pro Settings tab to 9600.</li>
+      </ul>
+    </article>
+  </main>
+</body>
+</html>

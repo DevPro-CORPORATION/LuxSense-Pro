@@ -1,0 +1,29 @@
+# Python & Virtual Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# PyInstaller & Build intermediates
+build/
+LuxSensePro.spec
+script.spec
+updater_bootstrapper/build/
+
+# IDE configurations
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Runtime Logs
+*.log
+%TEMP%/luxsense_pro_updater.log
+
+# Large binary builds (available as GitHub Release Assets)
+dist/
+dist_installer/*.exe
+dist_installer/*.zip

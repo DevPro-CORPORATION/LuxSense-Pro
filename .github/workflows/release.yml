@@ -1,0 +1,144 @@
+name: LuxSense Pro — Production Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "release-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  verify-and-test:
+    name: Run Automated Test Suite
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Execute Tests (Strict Quality Gate)
+        run: |
+          pytest tests/ -v --tb=short
+
+  build-and-package:
+    name: Build Binaries, Windows Installer & Release Assets
+    needs: verify-and-test
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup --no-progress -y
+
+      - name: Install Python Build Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Extract Release Version
+        id: get_version
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version $VERSION"
+
+      - name: Build Application, Bootstrapper & Windows Installer
+        shell: pwsh
+        run: |
+          python installer/build_installer.py
+
+      - name: Generate Changelog from Commits
+        id: changelog
+        shell: bash
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"* %s (%h)" -n 15)
+          else
+            CHANGELOG=$(git log --pretty=format:"* %s (%h)" ${PREV_TAG}..HEAD)
+          fi
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: LuxSense Pro ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            ## LuxSense Pro ${{ github.ref_name }} — Official Release
+            
+            Enterprise-grade optical radiometry and ambient illuminance monitoring system.
+            
+            ### What's New
+            ${{ steps.changelog.outputs.CHANGELOG }}
+            
+            ### Security & Cryptographic Hashes
+            Verify your download using SHA-256 checksums in `SHA256SUMS.txt` or `release-manifest.json`.
+            
+            ```
+            $(cat dist_installer/SHA256SUMS.txt)
+            ```
+            
+            ### Distribution Assets
+            - **Windows Installer:** `LuxSense-Pro-Setup-${{ github.ref_name }}.exe`
+            - **Portable Archive:** `LuxSense-Pro-${{ github.ref_name }}-portable.zip`
+            - **Updater Bootstrapper:** `updater.exe`
+            - **Release Manifest:** `release-manifest.json`
+            - **Checksums:** `SHA256SUMS.txt`
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          files: |
+            dist_installer/LuxSense-Pro-Setup-*.exe
+            dist_installer/LuxSense-Pro-*-portable.zip
+            dist/updater.exe
+            dist_installer/SHA256SUMS.txt
+            dist_installer/release-manifest.json
+
+      - name: Upload Website Artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website
+
+  deploy-pages:
+    name: Deploy Official Product Website to GitHub Pages
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

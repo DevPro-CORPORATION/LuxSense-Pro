@@ -1,0 +1,36 @@
+name: LuxSense Pro — Continuous Integration
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Run Automated Tests & Metrology Checks
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run Test Suite
+        run: |
+          pytest tests/ -v --tb=short
+
+      - name: Verify Cryptographic Integrity
+        run: |
+          python -c "import app.updater.security as s, tempfile, pathlib; p = pathlib.Path(tempfile.mktemp()); p.write_bytes(b'CI_VERIFY'); assert len(s.compute_sha256(p)) == 64; p.unlink()"
