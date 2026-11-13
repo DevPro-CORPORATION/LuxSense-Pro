@@ -52,3 +52,4 @@ To ensure zero data loss during software upgrades or uninstallation, all persona
 - `settings.json`: User preferences, active update channel (`stable` or `beta`), port, baud rate, and check timestamps.
 - `calibration.json`: Photometric zero-offset and optical gain multiplier.
 - `history.db`: SQLite database storing historical sensor readings with packet sequence numbers.
+

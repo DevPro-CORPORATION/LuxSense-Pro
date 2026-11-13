@@ -359,3 +359,4 @@ class SettingsTab(QWidget):
         else:
             import subprocess
             subprocess.Popen(["xdg-open" if sys.platform != "darwin" else "open", folder])
+

@@ -7,7 +7,10 @@ and passing readings to UI and persistent history.
 import time
 import serial
 import serial.tools.list_ports
-from PyQt6.QtCore import QThread, pyqtSignal
+try:
+    from PySide6.QtCore import QThread, Signal as pyqtSignal
+except ImportError:
+    from PyQt6.QtCore import QThread, pyqtSignal
 
 from software.core.config import (
     DEFAULT_BAUD_RATE,
@@ -110,3 +113,4 @@ class SerialWorker(QThread):
         self._running = False
         self.wait(3000)
         self.close_serial()
+

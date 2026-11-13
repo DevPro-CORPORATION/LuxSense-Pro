@@ -75,3 +75,4 @@ Windows file-locking (`ERROR_SHARING_VIOLATION`) prevents an executable from rep
 2. **Snapshot Backup:** Creates `LuxSensePro_backup_YYYYMMDD_HHMMSS` containing all previous binaries.
 3. **Execution & Health Check:** Executes the installer. If the installer returns non-zero or the target binary is missing, `rollback()` is triggered immediately.
 4. **Restoration:** Restores the previous binaries from the backup snapshot and relaunches the stable version, ensuring the workstation is never left non-operational.
+

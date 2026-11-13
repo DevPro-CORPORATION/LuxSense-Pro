@@ -15,7 +15,10 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
 from packaging.version import parse as parse_version, Version
 
-from PyQt6.QtCore import QObject, QThread, pyqtSignal
+try:
+    from PySide6.QtCore import QObject, QThread, Signal as pyqtSignal
+except ImportError:
+    from PyQt6.QtCore import QObject, QThread, pyqtSignal
 
 from updater.manifest import ReleaseManifest, ReleaseAssetInfo, parse_sha256sums
 from updater.security import compute_sha256, verify_sha256, verify_authenticode
@@ -312,3 +315,4 @@ class UpdateManager(QObject):
             subprocess.Popen([str(target_path)] + flags)
 
         sys.exit(0)
+

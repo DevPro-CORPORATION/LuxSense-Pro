@@ -43,3 +43,4 @@ Get-Content "$env:TEMP\luxsense_pro_updater.log" -Tail 50
 - **Cause:** Installer encountered an error (e.g. insufficient privileges or disk space).
 - **Safety Action:** The bootstrapper automatically restored your previous version and relaunched it. No manual recovery is needed.
 - **Fix:** Verify disk space in `C:\Program Files (x86)\DevPro\LuxSense Pro\` or run as administrator.
+

@@ -33,3 +33,4 @@ Upon first launch, navigate to **Settings & Update Center**:
 1. Confirm installed version shows `v2.1.0`.
 2. Select your preferred Update Channel: **Stable** or **Beta**.
 3. Verify the sensor serial port under Hardware Interface.
+

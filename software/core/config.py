@@ -30,3 +30,4 @@ GITHUB_API_RELEASES_URL = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_
 GITHUB_REPO_URL = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}"
 ISSUES_NEW_BUG_URL = f"{GITHUB_REPO_URL}/issues/new?template=bug_report.md"
 ISSUES_NEW_FEATURE_URL = f"{GITHUB_REPO_URL}/issues/new?template=feature_request.md"
+

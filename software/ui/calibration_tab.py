@@ -115,3 +115,4 @@ class CalibrationTab(QWidget):
         self.gain_spin.setValue(1.0)
         self.notes_edit.setText("Standard BH1750 high-resolution mode (1 lx resolution)")
         self._save_profile()
+

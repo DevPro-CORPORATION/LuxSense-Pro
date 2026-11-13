@@ -149,3 +149,4 @@ class AnalyticsTab(QWidget):
             QMessageBox.information(self, "Export Success", f"Successfully exported {len(records)} records to {file_path}")
         except Exception as e:
             QMessageBox.critical(self, "Export Error", f"Failed to export CSV: {e}")
+

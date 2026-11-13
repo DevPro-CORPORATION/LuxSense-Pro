@@ -6,6 +6,21 @@ Validates rolling-key XOR packets and checksums from Arduino Uno + BH1750.
 from typing import Optional, Tuple
 from software.core.config import SECRET_KEY
 
+def encrypt_packet(packet_id: int, lux: float) -> str:
+    """
+    Encodes sensor telemetry into rolling-key XOR encrypted hex string matching Arduino format.
+    """
+    packet_id %= 65536
+    lux_hundredths = int(lux * 100.0 + 0.5)
+    checksum = (packet_id + lux_hundredths) % 256
+    text = f"{packet_id}|{lux:.2f}|{checksum}".encode("ascii")
+    offset = packet_id % 16
+    encrypted = bytes(
+        b ^ SECRET_KEY[(i + offset) % 16]
+        for i, b in enumerate(text)
+    )
+    return encrypted.hex()
+
 def decrypt_packet(packet_hex: str) -> Optional[Tuple[int, float]]:
     """
     Decodes rolling-key XOR encrypted sensor telemetry.
@@ -51,3 +66,4 @@ def decrypt_packet(packet_hex: str) -> Optional[Tuple[int, float]]:
         pass
 
     return None
+

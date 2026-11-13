@@ -59,6 +59,9 @@ class UserSettings:
         settings.save()
         return settings
 
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
     def save(self) -> None:
         path = get_app_data_dir() / "settings.json"
         try:
@@ -88,6 +91,9 @@ class CalibrationProfile:
         profile = cls()
         profile.save()
         return profile
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
 
     def save(self) -> None:
         path = get_app_data_dir() / "calibration.json"
@@ -153,3 +159,4 @@ class MeasurementHistory:
                 return cursor.fetchone()[0]
         except Exception:
             return 0
+

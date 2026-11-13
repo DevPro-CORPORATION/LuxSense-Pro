@@ -44,3 +44,4 @@
 2. Ensure the `BH1750` library by Christopher Laws is installed.
 3. Select board **Arduino Uno** and your COM port.
 4. Upload the sketch to the board.
+

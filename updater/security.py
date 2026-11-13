@@ -74,3 +74,4 @@ def verify_authenticode(filepath: Path, expected_subject: Optional[str] = "DevPr
             return False, f"PowerShell Authenticode check failed: {res.stderr.strip()}"
     except Exception as e:
         return False, f"Authenticode inspection exception: {e}"
+

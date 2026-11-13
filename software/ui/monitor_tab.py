@@ -70,3 +70,4 @@ class MonitorTab(QWidget):
             f"Verified Packet #{packet_id}  |  Port: {port}  |  "
             "Checksum: OK  |  Rolling-128 XOR"
         )
+

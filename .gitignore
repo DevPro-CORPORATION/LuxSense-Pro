@@ -23,6 +23,10 @@ updater_bootstrapper/build/
 *.log
 %TEMP%/luxsense_pro_updater.log
 
+# Frontend build dependencies
+software/frontend/node_modules/
+software/frontend/.vite/
+
 # Large binary builds (available as GitHub Release Assets)
 dist/
 dist_installer/*.exe

@@ -75,3 +75,4 @@ def parse_sha256sums(sums_text: str) -> Dict[str, str]:
             fname = fname.lstrip("* ").strip()
             mapping[fname] = sha.strip().lower()
     return mapping
+
