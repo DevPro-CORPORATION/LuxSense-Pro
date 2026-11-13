@@ -4,19 +4,18 @@
 #define MyAppName "LuxSense Pro"
 #define MyAppVersion "2.1.0"
 #define MyAppPublisher "DevPro-CORP"
-#define MyAppURL "https://devpro-corporation.github.io/luxsense-pro/"
+#define MyAppURL "https://github.com/DevPro-CORPORATION/luxsense-pro"
 #define MyAppExeName "LuxSensePro.exe"
 
 [Setup]
-; NOTE: The value of AppId uniquely identifies this application.
 AppId={{E8B291A4-7D68-4F15-B621-3D5F9A1054C1}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} v{#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
-AppSupportURL={#MyAppURL}docs/faq.html
-AppUpdatesURL={#MyAppURL}#downloads
+AppSupportURL={#MyAppURL}/issues
+AppUpdatesURL={#MyAppURL}/releases
 DefaultDirName={autopf}\DevPro\{#MyAppName}
 DefaultGroupName=DevPro\{#MyAppName}
 DisableProgramGroupPage=yes
@@ -45,6 +44,7 @@ Source: "..\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\dist\updater.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\my_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\firmware\LuxSense_Arduino\LuxSense_Arduino.ino"; DestDir: "{app}\firmware"; Flags: ignoreversion
+Source: "..\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
@@ -57,7 +57,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilen
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-// User settings and SQLite measurements are stored in APPDATA and are preserved during updates and uninstalls.
+// User settings, calibration, and SQLite measurements are stored in APPDATA and are preserved during updates and uninstalls.
 function InitializeSetup(): Boolean;
 begin
   Result := True;

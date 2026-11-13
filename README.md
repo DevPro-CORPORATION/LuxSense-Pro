@@ -1,173 +1,135 @@
 # LuxSense Pro
 
 **Enterprise-Grade Optical Radiometry & Real-Time Sensor Telemetry**  
-*An official open-hardware and software instrument engineered by DevPro-CORP.*
+*Official open-hardware and software instrument engineered by DevPro-CORP.*
 
 ---
 
 ## 1. Overview
-LuxSense Pro is a precision photometric workstation application paired with an **Arduino Uno R3** and **BH1750 (GY-30)** digital illuminance sensor. It acquires real-time light intensity readings (0.00 – 65,535.00 lx) over high-speed USB serial protected by rolling-128 XOR encrypted telemetry.
+LuxSense Pro is an optical metrology application paired with an **Arduino Uno R3** and **BH1750 (GY-30)** ambient light sensor. It acquires real-time illuminance readings (0.00 – 65,535.00 lx) over high-speed USB serial with rolling-128 XOR encrypted telemetry.
 
-The application incorporates a complete, secure GitHub-powered release and update system, Windows Authenticode publisher validation, safe rollback updater bootstrapper, and decoupled user state storage.
+The application incorporates a complete GitHub-powered software update infrastructure under the **DevPro-CORP** organization (`DevPro-CORPORATION/luxsense-pro`). The desktop application independently checks GitHub for updates without requiring users to visit external websites.
 
-- **Official Product Portal:** [https://devpro-corporation.github.io/luxsense-pro/](https://devpro-corporation.github.io/luxsense-pro/)
 - **GitHub Repository:** [https://github.com/DevPro-CORPORATION/luxsense-pro](https://github.com/DevPro-CORPORATION/luxsense-pro)
+- **Official Distribution Channel:** GitHub Releases
+- **Update Channels:** Stable (Production) & Beta (Previews)
 - **Organization Ownership:** DevPro-CORP (`DevPro-CORPORATION`)
 
 ---
 
-## 2. Repository Architecture
+## 2. Repository Structure
+
+In accordance with system specifications, the repository maintains the following structure:
 
 ```text
+├── software/                 # Windows desktop application (PyQt6 interface & core)
+│   ├── core/                 # Serial worker, storage, config, crypto packet
+│   ├── ui/                   # Live monitor, analytics, calibration, settings & Update Center
+│   └── main.py               # Main application entry point
+├── firmware/                 # Arduino Uno C++ sketch & hardware specs
+│   ├── LuxSense_Arduino/     # Official Arduino sketch (BH1750 driver + rolling XOR cipher)
+│   └── README.md             # Hardware pinout table and wiring guide
+├── installer/                # Windows installer packaging
+│   ├── LuxSensePro_Setup.iss # Inno Setup 6 production installer script
+│   └── build_installer.py    # Automated packaging pipeline (PyInstaller -> Inno Setup -> Checksums)
+├── updater/                  # Update manager & standalone updater bootstrapper
+│   ├── update_manager.py     # GitHub Releases API client with Stable/Beta channel filtering
+│   ├── security.py           # SHA-256 hash calculation & Windows Authenticode validator
+│   ├── manifest.py           # Release manifest and SHA256SUMS parser
+│   ├── bootstrapper.py       # Standalone updater: PID wait, snapshot backup, rollback, relaunch
+│   └── bootstrapper.spec     # PyInstaller compilation specification for updater.exe
+├── docs/                     # Technical documentation
+│   ├── ARCHITECTURE.md       # High-level architecture & telemetry pipeline
+│   ├── INSTALLATION.md       # Setup wizard, portable mode, and enterprise deployment
+│   ├── FIRMWARE_GUIDE.md     # Wiring schematic, I2C bus specs, and encryption details
+│   ├── UPDATE_SYSTEM.md      # Update Center, Stable/Beta channels, SHA-256 & rollback
+│   └── TROUBLESHOOTING.md    # USB driver fixes, COM port conflicts, and updater recovery
+├── tests/                    # Automated test suite (pytest)
+│   ├── test_bootstrapper.py  # Tests backup creation and automatic rollback
+│   ├── test_security.py      # Tests SHA-256 verification and Authenticode validator
+│   ├── test_serial_protocol.py # Tests rolling XOR decryption and checksum rejection
+│   ├── test_storage.py       # Tests settings, calibration, and SQLite database
+│   └── test_update_manager.py # Tests semver parsing, channel filtering, and downgrade prevention
 ├── .github/
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.md             # Standardized bug reporting form
-│   │   └── feature_request.md        # Feature enhancement request form
-│   └── workflows/
-│       ├── ci.yml                    # Automated tests and verification on push/PR
-│       └── release.yml               # GitHub Actions release build & publishing pipeline
-├── app/                              # Desktop Application Package
-│   ├── core/
-│   │   ├── config.py                 # Application constants, paths, and version definitions
-│   │   ├── crypto_packet.py          # 128-bit rolling-key XOR packet decoder & checksums
-│   │   ├── serial_worker.py          # Arduino USB serial thread with auto-reconnect
-│   │   └── storage.py                # Persistent user settings, calibration, SQLite history
-│   ├── updater/
-│   │   ├── manifest.py               # Release manifest and SHA256SUMS parser
-│   │   ├── security.py               # SHA-256 hash calculation & Authenticode signature check
-│   │   └── update_manager.py         # Asynchronous GitHub Releases API client & installer executor
-│   ├── ui/
-│   │   ├── analytics_tab.py          # Statistical telemetry view and CSV export
-│   │   ├── calibration_tab.py        # Optical zero-offset and multiplier gain controls
-│   │   ├── main_window.py            # Primary PyQt6 desktop interface
-│   │   ├── monitor_tab.py            # Real-time digital gauge and packet indicators
-│   │   ├── settings_tab.py           # Hardware config, update controls, data folder link
-│   │   └── update_dialog.py          # Update notification modal with changelog and progress
-│   └── main.py                       # Main application entry point
-├── updater_bootstrapper/
-│   ├── bootstrapper.py               # Standalone updater: backup, process wait, rollback
-│   └── bootstrapper.spec             # PyInstaller spec for updater.exe
-├── firmware/
-│   ├── LuxSense_Arduino/
-│   │   └── LuxSense_Arduino.ino      # Arduino Uno sketch with BH1750 driver and encryption
-│   └── README.md                     # Hardware pinout, electrical specs, and wiring diagram
-├── installer/
-│   ├── LuxSensePro_Setup.iss         # Inno Setup 6 production installer configuration
-│   └── build_installer.py            # Packaging pipeline: PyInstaller -> Inno Setup -> Manifests
-├── website/                          # GitHub Pages Official Product Website
-│   ├── index.html                    # 9-section scientific instrumentation website
-│   ├── style.css                     # Graphite, ivory, and emerald green design system
-│   ├── script.js                     # Dynamic GitHub Releases API sync with fallback
-│   ├── releases.json                 # Embedded release manifest fallback
-│   ├── assets/                       # SVG schematics, telemetry diagrams, and icons
-│   └── docs/                         # Detailed installation and troubleshooting guides
-├── tests/                            # Automated Unit & Integration Tests
-│   ├── test_bootstrapper.py          # Tests backup creation and automatic rollback
-│   ├── test_security.py              # Tests SHA-256 verification and Authenticode validator
-│   ├── test_serial_protocol.py       # Tests rolling XOR decryption and checksum rejection
-│   ├── test_storage.py               # Tests settings, calibration, and SQLite database
-│   └── test_update_manager.py        # Tests semver parsing, downgrade prevention, manifests
-├── requirements.txt                  # Python dependencies
-├── CHANGELOG.md                      # Semantic version history
-└── LICENSE                           # DevPro-CORP Open Source License
+│   ├── ISSUE_TEMPLATE/       # Standardized bug report and feature request templates
+│   └── workflows/            # GitHub Actions CI/CD pipelines
+│       ├── ci.yml            # Automated testing & firmware validation on push/PR
+│       └── release.yml       # Production & beta release pipeline triggered on version tags
+├── requirements.txt          # Python dependencies
+├── CHANGELOG.md              # Semantic version history
+└── LICENSE                   # DevPro-CORP Open Source License
 ```
 
 ---
 
-## 3. Automatic Update System
+## 3. In-App Update Center
 
-### A. Dynamic Semantic Versioning & Downgrade Prevention
-- Queries the GitHub Releases public REST API (`/repos/DevPro-CORPORATION/luxsense-pro/releases`).
-- Compares installed semver against published release tags via Python's `packaging.version.Version`.
-- **Never downgrades automatically:** If `published_version <= installed_version`, the application reports that it is already up to date.
-- Prerelease builds (`alpha`, `beta`, `rc`) are ignored by default unless the user enables *"Include preview and pre-release builds"* in Settings.
-
-### B. Security Architecture
-1. **No Embedded Write Tokens:** The application uses GitHub's public read-only Releases REST API.
-2. **SHA-256 Checksum Validation:** The downloaded installer is hashed before execution. If the hash does not match `release-manifest.json` or `SHA256SUMS.txt`, the file is immediately deleted and the user is alerted.
-3. **Windows Authenticode Verification:** The updater inspects the digital signature and verifies that the publisher matches DevPro-CORP.
-4. **Never executes unverified files:** Execution is aborted if any cryptographic check fails.
-
-### C. Standalone Updater Bootstrapper & Automatic Rollback
-- Executable: `updater.exe`
-- Process handover: Waits for the running LuxSense Pro PID to exit completely, avoiding Windows file-sharing locks (`ERROR_SHARING_VIOLATION`).
-- Snapshot backup: Creates a timestamped directory backup of the current application files prior to installation.
-- Failure recovery: If the installer exits with an error code or target files are missing, the bootstrapper automatically executes a full rollback, restores the previous version, and relaunches it.
-- Seamless update: On success, temporary backups are cleaned up and the upgraded application is launched automatically.
-
-### D. User State & Calibration Preservation
-All user settings, custom zero-offset calibrations, gain multipliers, and historical SQLite readings reside in:
-`%APPDATA%\DevPro\LuxSensePro\`
-Application updates overwrite only application binaries, preserving all user data intact.
+Integrated directly into the **Settings** tab of LuxSense Pro:
+- **Installed Version:** Displays currently running version (e.g. `v2.1.0`).
+- **Latest Available Version:** Fetched asynchronously from GitHub Releases public REST API.
+- **Update Channel Selector:**
+  - `Stable (Official Releases)`: Filters out prerelease and beta builds. Only considers production releases.
+  - `Beta (Prereleases & Previews)`: Includes preview builds, release candidates (`-rc*`), and beta tags (`-beta*`).
+- **Release Notes:** Formatted markdown changelog for the discovered version.
+- **Check for Updates Button:** Triggers an immediate scan on the selected channel.
+- **Download Progress:** Real-time progress bar showing transferred MB / total MB and percentage.
+- **Install Update Button:** Becomes active only after SHA-256 and digital signature verification pass.
+- **Last Update Check:** Displays timestamp of the most recent check.
 
 ---
 
-## 4. Hardware Architecture & Firmware
+## 4. Secure Update Process
 
-```
-+--------------------+            I2C Bus            +--------------------+
-|                    |  5V  ---------------------->  | VCC                |
-|                    |  GND ---------------------->  | GND                |
-|    Arduino Uno     |  A4 (SDA) <---------------->  | SDA   BH1750/GY-30 |
-|    ATmega328P      |  A5 (SCL) ----------------->  | SCL                |
-|                    |  GND ---------------------->  | ADDR (0x23)        |
-+--------------------+                               +--------------------+
-          |
-          | USB Serial (115200 Baud)
-          v
-+--------------------+
-|  Host Workstation  |
-|  LuxSense Pro App  |
-+--------------------+
-```
-
-- **Microcontroller:** Arduino Uno R3 (ATmega328P)
-- **Sensor:** ROHM BH1750FVI (GY-30 module)
-- **Communication:** I2C (Address `0x23`)
-- **Telemetry Cipher:** 128-bit rolling-key XOR cipher (`SECRET_KEY[16]`) with modular checksum.
+1. **GitHub Releases REST API:**
+   Queries `https://api.github.com/repos/DevPro-CORPORATION/luxsense-pro/releases`.
+   Never embeds write-access tokens.
+2. **Semantic Versioning & Downgrade Prevention:**
+   Compares versions using `packaging.version.Version`. Never downgrades automatically.
+3. **Cryptographic SHA-256 Verification:**
+   Hashes downloaded installer in 64 KB chunks and verifies against `release-manifest.json` / `SHA256SUMS.txt`. Corrupted or mismatched files are deleted immediately.
+4. **Windows Authenticode Verification:**
+   Inspects digital signature and confirms publisher subject matches `DevPro`.
+5. **Standalone Updater Bootstrapper (`updater.exe`):**
+   - Waits for parent PID to exit to avoid Windows file locks (`ERROR_SHARING_VIOLATION`).
+   - Creates a timestamped directory backup (`LuxSensePro_backup_YYYYMMDD_HHMMSS`).
+   - Executes installer.
+   - If installation fails: Triggers automatic rollback, restores previous binaries, and relaunches the app.
+   - If installation succeeds: Cleans up backup and launches the updated version.
+6. **User Data Preservation:**
+   All configuration (`settings.json`), calibration profiles (`calibration.json`), and measurement logs (`history.db`) reside in `%APPDATA%\DevPro\LuxSensePro\`. Upgrades and uninstalls leave this directory completely untouched.
 
 ---
 
-## 5. GitHub Actions Release Pipeline
+## 5. GitHub Actions CI/CD Pipelines
 
-The CI/CD pipeline (`.github/workflows/release.yml`) activates on tag pushes matching `v*.*.*`:
-1. **Automated Testing:** Runs `pytest tests/` in a clean environment.
-2. **PyInstaller Compilation:** Builds `LuxSensePro.exe` and `updater.exe`.
-3. **Installer Packaging:** Builds `LuxSense-Pro-Setup-v{VERSION}.exe` with Inno Setup 6.
-4. **Portable Packaging:** Packages `LuxSense-Pro-v{VERSION}-portable.zip`.
-5. **Cryptographic Checksums:** Generates `SHA256SUMS.txt` and `release-manifest.json`.
-6. **Release Publishing:** Publishes assets to GitHub Releases.
-7. **Website Synchronization:** Deploys updated documentation and release manifests to GitHub Pages.
-
----
-
-## 6. Official Product Website
-
-The dedicated product website is hosted on GitHub Pages:
-- **URL:** [https://devpro-corporation.github.io/luxsense-pro/](https://devpro-corporation.github.io/luxsense-pro/)
-- Dynamically queries GitHub Releases to show live versions, changelogs, direct downloads, and SHA-256 checksums.
-- Features graceful offline fallback to `releases.json`.
-- 9 complete sections: Home, Features, Hardware, Software, Downloads, Release Notes, Documentation, Team, and About DevPro-CORP.
+- **CI Workflow (`.github/workflows/ci.yml`):**
+  Runs automated tests (`pytest tests/`) and verifies Arduino sketch syntax on push/PR to `main`.
+- **Release Workflow (`.github/workflows/release.yml`):**
+  Triggered by tags matching `v*.*.*`:
+  1. Runs automated tests (strict quality gate).
+  2. Verifies firmware compilation syntax.
+  3. Compiles application (`software/main.py`) with PyInstaller.
+  4. Compiles standalone updater (`updater/bootstrapper.py`) with PyInstaller.
+  5. Builds Windows setup wizard with Inno Setup 6.
+  6. Packages portable ZIP distribution.
+  7. Generates SHA-256 checksums (`SHA256SUMS.txt`, `release-manifest.json`).
+  8. Publishes GitHub Release assets. Automatically sets `prerelease: true` for beta/rc tags and `prerelease: false` for stable tags.
 
 ---
 
-## 7. Development & Testing
+## 6. Development & Verification
 
-### Running Tests
-```bash
-pytest tests/ -v
+### Running Automated Tests
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-### Packaging Locally
-```bash
-python installer/build_installer.py
+### Building Distribution Packages Locally
+```powershell
+.\.venv\Scripts\python.exe installer/build_installer.py
 ```
-
----
-
-## 8. Team & Product Ownership
-
-- **Product Ownership:** DevPro-CORP (DevPro Corporation)
-- **M Somasundaram:** Lead Systems Architect & Founder
-- **Alex Chen:** Embedded Systems & Firmware Engineer
-- **Sarah Jenkins:** Photometric Metrology & Quality Lead
+Outputs are compiled to `dist_installer/`:
+- `LuxSense-Pro-Setup-v2.1.0.exe` (Windows Installer)
+- `LuxSense-Pro-v2.1.0-portable.zip` (Portable Distribution)
+- `release-manifest.json`
+- `SHA256SUMS.txt`

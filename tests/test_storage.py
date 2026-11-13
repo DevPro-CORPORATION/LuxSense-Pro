@@ -4,7 +4,7 @@ Unit Tests for User Settings, Calibration Profiles, and SQLite History Persisten
 
 import tempfile
 from pathlib import Path
-from app.core.storage import UserSettings, CalibrationProfile, MeasurementHistory
+from software.core.storage import UserSettings, CalibrationProfile, MeasurementHistory
 
 def test_calibration_profile_math():
     profile = CalibrationProfile(
@@ -12,24 +12,22 @@ def test_calibration_profile_math():
         gain_multiplier=1.05
     )
     raw_lux = 100.0
-    # Expected: (100.0 - 2.5) * 1.05 = 97.5 * 1.05 = 102.375 -> 102.38
     calibrated = profile.apply(raw_lux)
     assert calibrated == 102.38
 
-    # Ensure non-negative lux
     dark_raw = 1.0
-    dark_cal = profile.apply(dark_raw)  # (1.0 - 2.5) * 1.05 < 0 -> 0.0
+    dark_cal = profile.apply(dark_raw)
     assert dark_cal == 0.0
 
 def test_settings_preservation():
     settings = UserSettings(
         serial_port="COM9",
         baud_rate=57600,
-        include_prereleases=True
+        update_channel="beta"
     )
     assert settings.serial_port == "COM9"
     assert settings.baud_rate == 57600
-    assert settings.include_prereleases
+    assert settings.update_channel == "beta"
 
 def test_measurement_history_db():
     history = MeasurementHistory()

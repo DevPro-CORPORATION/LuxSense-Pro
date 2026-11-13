@@ -1,1 +1,0 @@
-# LuxSense Pro Core Module

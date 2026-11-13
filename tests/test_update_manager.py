@@ -1,11 +1,11 @@
 """
-Unit Tests for LuxSense Pro Update Manager & Version Comparison
+Unit Tests for LuxSense Pro Update Manager, Channels & SemVer Verification
 """
 
 import pytest
 from packaging.version import parse as parse_version
-from app.updater.manifest import ReleaseManifest, parse_sha256sums
-from app.core.config import APP_VERSION
+from updater.manifest import ReleaseManifest, parse_sha256sums
+from software.core.config import APP_VERSION
 
 def test_semver_comparisons():
     current = parse_version(APP_VERSION)
@@ -25,37 +25,56 @@ def test_downgrade_prevention():
     assert not (candidate_older > installed)
     assert not (candidate_same > installed)
 
-def test_prerelease_filtering():
+def test_stable_channel_filtering():
     releases = [
         {"tag_name": "v2.0.0", "prerelease": False},
         {"tag_name": "v2.1.0", "prerelease": False},
         {"tag_name": "v2.2.0-beta.1", "prerelease": True},
+        {"tag_name": "v2.2.0-rc.1", "prerelease": True},
         {"tag_name": "v2.2.0", "prerelease": False}
     ]
 
-    # Without prereleases
-    stable_only = [r for r in releases if not r["prerelease"]]
+    # In Stable channel, filter out prereleases and beta/rc tags
+    stable_only = [
+        r for r in releases
+        if not r["prerelease"] and not any(x in r["tag_name"].lower() for x in ["beta", "rc", "alpha"])
+    ]
     assert len(stable_only) == 3
     assert all("beta" not in r["tag_name"] for r in stable_only)
+    assert all("rc" not in r["tag_name"] for r in stable_only)
 
-    # With prereleases
-    with_pre = releases
-    assert len(with_pre) == 4
+def test_beta_channel_inclusion():
+    releases = [
+        {"tag_name": "v2.0.0", "prerelease": False},
+        {"tag_name": "v2.1.0", "prerelease": False},
+        {"tag_name": "v2.2.0-beta.1", "prerelease": True}
+    ]
+
+    installed = parse_version("2.1.0")
+    # Beta channel evaluates all releases
+    best_ver = None
+    for r in releases:
+        v = parse_version(r["tag_name"].lstrip("v"))
+        if best_ver is None or v > best_ver:
+            best_ver = v
+
+    assert best_ver == parse_version("2.2.0-beta.1")
+    assert best_ver > installed
 
 def test_release_manifest_parsing():
     manifest_json = """{
         "version": "2.1.0",
         "tag_name": "v2.1.0",
         "release_name": "LuxSense Pro v2.1.0",
-        "published_at": "2026-11-12T20:00:00Z",
+        "published_at": "2026-11-13T20:00:00Z",
         "prerelease": false,
         "release_notes": "Official release notes",
         "assets": {
             "installer": {
                 "filename": "LuxSense-Pro-Setup-v2.1.0.exe",
-                "sha256": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+                "sha256": "a0a80e4060d152cb33cd9233f6072e9af1450774f8418c0565ccc65f05c3b478",
                 "url": "https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/installer.exe",
-                "size": 35000000
+                "size": 39500000
             }
         }
     }"""
@@ -63,6 +82,7 @@ def test_release_manifest_parsing():
     assert manifest.version == "2.1.0"
     assert manifest.tag_name == "v2.1.0"
     assert not manifest.prerelease
+    assert manifest.channel == "stable"
     installer = manifest.get_asset("installer")
     assert installer is not None
     assert installer.filename == "LuxSense-Pro-Setup-v2.1.0.exe"

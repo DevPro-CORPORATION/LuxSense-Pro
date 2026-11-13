@@ -5,7 +5,7 @@ Unit Tests for Updater Bootstrapper: Backup, Atomic Replacement, and Rollback
 import tempfile
 import shutil
 from pathlib import Path
-from updater_bootstrapper.bootstrapper import create_backup, rollback
+from updater.bootstrapper import create_backup, rollback
 
 def test_backup_and_rollback():
     temp_dir = Path(tempfile.mkdtemp())
@@ -30,5 +30,4 @@ def test_backup_and_rollback():
     assert (app_dir / "LuxSensePro.exe").read_text() == "VERSION_2_0_0_BIN"
     assert (app_dir / "config.dat").read_text() == "STABLE_CONFIG"
 
-    # Clean up
     shutil.rmtree(temp_dir, ignore_errors=True)

@@ -1,27 +1,28 @@
 {
   "version": "2.1.0",
   "tag_name": "v2.1.0",
+  "channel": "stable",
   "release_name": "LuxSense Pro v2.1.0 \u2014 Precision Optical Metrology & Release Engine",
-  "published_at": "2026-11-12T20:00:00Z",
+  "published_at": "2026-11-13T20:00:00Z",
   "prerelease": false,
-  "release_notes": "Official release of LuxSense Pro v2.1.0 with automatic update infrastructure, SHA-256 verification, and persistent data storage.",
+  "release_notes": "Official release of LuxSense Pro v2.1.0 featuring an in-app Update Center with Stable and Beta channels, automated GitHub update infrastructure, SHA-256 verification, and persistent AppData user storage.",
   "assets": {
     "LuxSense-Pro-Setup-v2.1.0.exe": {
       "filename": "LuxSense-Pro-Setup-v2.1.0.exe",
-      "sha256": "a0a80e4060d152cb33cd9233f6072e9af1450774f8418c0565ccc65f05c3b478",
-      "size": 39508104,
+      "sha256": "d18e3c34fd7d91b8cc7ead2ebffc895ead1935b77be8ffb1bbee3eba2a7cf94b",
+      "size": 39522420,
       "url": "https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/LuxSense-Pro-Setup-v2.1.0.exe"
     },
     "LuxSense-Pro-v2.1.0-portable.zip": {
       "filename": "LuxSense-Pro-v2.1.0-portable.zip",
-      "sha256": "f27aa2fba0d018f631f76e5feb17448f5204c7db641a546b4995c6f40d79453d",
-      "size": 46372098,
+      "sha256": "d2254b91fe1ee274e47df538bb5ac4571cc6591741641fff0a2b2585b566430e",
+      "size": 46386953,
       "url": "https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/LuxSense-Pro-v2.1.0-portable.zip"
     },
     "updater.exe": {
       "filename": "updater.exe",
-      "sha256": "904d84954fd64ad171bb104180ee6b4bb714e75aff5e5ae33f1ce4f63ee1b7a8",
-      "size": 9395969,
+      "sha256": "cd4980db9add710d49963720256c9793547ba2924c470f9bd336dddaef4afa0a",
+      "size": 9396344,
       "url": "https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/updater.exe"
     }
   }

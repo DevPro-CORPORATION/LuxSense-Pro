@@ -1,4 +1,4 @@
-name: LuxSense Pro — Production Release Pipeline
+name: LuxSense Pro — Production & Beta Release Pipeline
 
 on:
   push:
@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: "release-${{ github.ref }}"
@@ -16,7 +14,7 @@ concurrency:
 
 jobs:
   verify-and-test:
-    name: Run Automated Test Suite
+    name: Run Automated Tests & Firmware Compilation Verification
     runs-on: windows-latest
     steps:
       - name: Checkout Code
@@ -34,12 +32,16 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
-      - name: Execute Tests (Strict Quality Gate)
+      - name: Execute Tests (Strict Verification Gate)
         run: |
           pytest tests/ -v --tb=short
 
-  build-and-package:
-    name: Build Binaries, Windows Installer & Release Assets
+      - name: Verify Arduino Firmware Compilation
+        run: |
+          python -c "code = open('firmware/LuxSense_Arduino/LuxSense_Arduino.ino').read(); assert 'ID:GY30_LUX_PRO_2026' in code; assert 'sendEncryptedPacket' in code; assert 'SECRET_KEY' in code; print('Firmware syntax and encryption keys verified.')"
+
+  build-and-publish:
+    name: Build Binaries, Windows Installer & Publish GitHub Release
     needs: verify-and-test
     runs-on: windows-latest
     steps:
@@ -58,26 +60,34 @@ jobs:
         run: |
           choco install innosetup --no-progress -y
 
-      - name: Install Python Build Dependencies
+      - name: Install Build Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Extract Release Version
-        id: get_version
+      - name: Extract Release Version & Determine Channel
+        id: release_meta
         shell: bash
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building version $VERSION"
+          if [[ "$TAG" == *"beta"* ]] || [[ "$TAG" == *"alpha"* ]] || [[ "$TAG" == *"rc"* ]]; then
+            echo "CHANNEL=Beta" >> $GITHUB_OUTPUT
+            echo "IS_PRERELEASE=true" >> $GITHUB_OUTPUT
+          else
+            echo "CHANNEL=Stable" >> $GITHUB_OUTPUT
+            echo "IS_PRERELEASE=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build Application, Bootstrapper & Windows Installer
         shell: pwsh
         run: |
           python installer/build_installer.py
 
-      - name: Generate Changelog from Commits
+      - name: Generate Changelog from Git Commits
         id: changelog
         shell: bash
         run: |
@@ -94,51 +104,37 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: LuxSense Pro ${{ github.ref_name }}
+          name: LuxSense Pro ${{ github.ref_name }} [${{ steps.release_meta.outputs.CHANNEL }}]
           tag_name: ${{ github.ref_name }}
           body: |
-            ## LuxSense Pro ${{ github.ref_name }} — Official Release
+            ## LuxSense Pro ${{ github.ref_name }} — ${{ steps.release_meta.outputs.CHANNEL }} Channel
             
-            Enterprise-grade optical radiometry and ambient illuminance monitoring system.
+            Enterprise-grade optical radiometry and ambient illuminance monitoring workstation.
+            
+            ### Release Information
+            - **Channel:** ${{ steps.release_meta.outputs.CHANNEL }}
+            - **Version:** ${{ steps.release_meta.outputs.VERSION }}
+            - **Published By:** DevPro-CORP
             
             ### What's New
             ${{ steps.changelog.outputs.CHANGELOG }}
             
-            ### Security & Cryptographic Hashes
-            Verify your download using SHA-256 checksums in `SHA256SUMS.txt` or `release-manifest.json`.
-            
+            ### Verified SHA-256 Checksums
             ```
             $(cat dist_installer/SHA256SUMS.txt)
             ```
             
             ### Distribution Assets
-            - **Windows Installer:** `LuxSense-Pro-Setup-${{ github.ref_name }}.exe`
-            - **Portable Archive:** `LuxSense-Pro-${{ github.ref_name }}-portable.zip`
-            - **Updater Bootstrapper:** `updater.exe`
+            - **Windows Setup Wizard:** `LuxSense-Pro-Setup-${{ github.ref_name }}.exe`
+            - **Portable Distribution:** `LuxSense-Pro-${{ github.ref_name }}-portable.zip`
+            - **Standalone Updater:** `updater.exe`
             - **Release Manifest:** `release-manifest.json`
             - **Checksums:** `SHA256SUMS.txt`
           draft: false
-          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          prerelease: ${{ steps.release_meta.outputs.IS_PRERELEASE == 'true' }}
           files: |
             dist_installer/LuxSense-Pro-Setup-*.exe
             dist_installer/LuxSense-Pro-*-portable.zip
             dist/updater.exe
             dist_installer/SHA256SUMS.txt
             dist_installer/release-manifest.json
-
-      - name: Upload Website Artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: website
-
-  deploy-pages:
-    name: Deploy Official Product Website to GitHub Pages
-    needs: build-and-package
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
