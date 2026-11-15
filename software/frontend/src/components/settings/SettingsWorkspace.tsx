@@ -45,6 +45,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
   // Software Update Center state
+  const [installedVersion, setInstalledVersion] = useState<string>('2.3.0');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<any>(null);
   const [downloadProgress, setDownloadProgress] = useState<{
@@ -72,8 +73,12 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
   useEffect(() => {
     const loadInit = async () => {
       try {
-        const s = await bridge.getSettings();
+        const [s, ver] = await Promise.all([
+          bridge.getSettings(),
+          bridge.getAppVersion()
+        ]);
         if (s) setSettings(s);
+        if (ver) setInstalledVersion(ver);
         scanSerialPorts();
         loadFirmwareStatus();
       } catch (e) {
@@ -86,6 +91,11 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
     const unsubUpdate = bridge.onUpdateResult((res) => {
       setIsCheckingUpdate(false);
       setUpdateInfo(res);
+      if (res?.error) {
+        setVerificationError(res.message || 'Update check failed.');
+      } else {
+        setVerificationError(null);
+      }
       if (res?.available && onUpdateAvailableChange) {
         onUpdateAvailableChange(true);
       }
@@ -309,7 +319,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
                 <div>
                   <div className="text-[10px] font-mono text-zinc-400 uppercase">Installed Version</div>
                   <div className="text-xl font-bold font-mono text-white mt-1">
-                    v2.3.0
+                    v{installedVersion}
                   </div>
                   <div className="text-[10px] font-mono text-metrology-green mt-0.5">
                     Current Active Build
@@ -319,13 +329,35 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
                 <div>
                   <div className="text-[10px] font-mono text-zinc-400 uppercase">Latest Available</div>
                   <div className="text-xl font-bold font-mono text-metrology-green mt-1">
-                    {updateInfo?.version ? `v${updateInfo.version}` : 'v2.3.0'}
+                    {updateInfo?.version
+                      ? (String(updateInfo.version).startsWith('v') ? updateInfo.version : `v${updateInfo.version}`)
+                      : (updateInfo?.tag_name || `v${installedVersion}`)}
                   </div>
                   <div className="text-[10px] font-mono text-zinc-400 mt-0.5">
-                    {updateInfo?.available ? 'Update Ready' : 'Up to Date'}
+                    {updateInfo?.available ? 'Update Ready' : (updateInfo?.error ? 'Check Failed' : 'Up to Date')}
                   </div>
                 </div>
               </div>
+
+              {/* Explicit Up to Date Status Banner */}
+              {updateInfo && !updateInfo.available && !updateInfo.error && (
+                <div className="bg-metrology-green/10 border border-metrology-green/30 p-3 rounded-lg flex items-center space-x-2.5 text-xs font-mono text-metrology-green">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    {updateInfo.message || `LuxSense Pro is up to date (Installed: v${installedVersion}, Latest: v${updateInfo.version || installedVersion}).`}
+                  </span>
+                </div>
+              )}
+
+              {/* Explicit Error Banner */}
+              {updateInfo?.error && (
+                <div className="bg-metrology-crimson/15 border border-metrology-crimson/40 p-3 rounded-lg flex items-center space-x-2.5 text-xs font-mono text-metrology-crimson">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    {updateInfo.message || 'Update check could not reach release repository. Please verify internet connection.'}
+                  </span>
+                </div>
+              )}
 
               {/* Channel Selection */}
               <div className="space-y-2">

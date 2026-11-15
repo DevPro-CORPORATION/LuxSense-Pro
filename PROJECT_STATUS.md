@@ -238,3 +238,35 @@ Testing conducted directly on physical silicon (Arduino Uno R3 on `COM5` with GY
      - `docs/evidence/ui_v230_settings_software.png`
      - `docs/evidence/ui_v230_firmware_update_center.png`
      - `docs/evidence/ui_v230_recovery_modal.png`
+
+---
+
+## 13. v2.3.0 Release, Update Center & Website Production Deployment Milestone
+
+**Branch:** `main` (Merged from `v2.3.0-firmware-architecture`)  
+**Published Release:** `v2.3.0` (Software) / `v2.0.0` (Firmware Microcode)  
+**Status:** **COMPLETE — VERIFIED & DEPLOYED**
+
+### Accomplishments & Verification Audit:
+1. **GitHub Upstream Recovery:**
+   - Identified that prior feature branches (`v2.2.0-refinement` and `v2.3.0-firmware-architecture`) were committed locally but never merged into `main` or pushed to remote `origin`.
+   - Verified commit lineage: `c4ac199` (v2.1.0) -> `86abb6d` (v2.2.0) -> `e7d5be6` (v2.3.0) -> merged cleanly into `main`.
+2. **Update Center & IPC Bridge Repair:**
+   - Fixed Slot signature mismatch in `software/core/webengine_host.py` allowing `checkForUpdates`, `downloadUpdate`, and `installUpdate` to accept variable arguments from JavaScript.
+   - Enhanced `updater/update_manager.py` to automatically resolve expected SHA-256 hashes from published `SHA256SUMS.txt` or `release-manifest.json` assets when downloading updates.
+   - Implemented dynamic installed version discovery (`getAppVersion()`) in `SettingsWorkspace.tsx`, eliminating hardcoded version text.
+   - Added explicit, non-silent status banners: "LuxSense Pro is up to date" and detailed error diagnostics with actionable retry buttons.
+3. **Official Website Overhaul:**
+   - Synchronized `website/index.html` with v2.3.0 release assets, exact SHA-256 checksums, and download links.
+   - Added dedicated ATmega328P Firmware Microcode download card and documentation tab explaining Ed25519 digital signatures and Optiboot recovery procedures.
+   - Verified `.github/workflows/pages.yml` points to the active `website` directory.
+4. **End-to-End Upgrade Lifecycle Verification:**
+   - Authored `tests/test_upgrade_lifecycle.py` verifying all 6 upgrade stages:
+     - Version detection from an installed v2.1.0 copy
+     - Release manifest asset and checksum integrity
+     - Failed/interrupted download cleanup
+     - SHA-256 hash mismatch rejection and immediate unlinking
+     - Installation failure detection and automated rollback to v2.1.0
+     - Successful v2.3.0 installation with zero data loss in `%APPDATA%\DevPro\LuxSensePro\`
+5. **Comprehensive Test Suite:**
+   - 49 passed, 1 skipped in 2.01s (`pytest tests/ -v`). All unit, metrology, security, flasher, and upgrade lifecycle tests pass.

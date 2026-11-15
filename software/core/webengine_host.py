@@ -395,40 +395,87 @@ class BridgeBackend(QObject):
     # -------------------------------------------------------------
     # Update Engine Slots
     # -------------------------------------------------------------
-    @Slot(bool)
-    def checkForUpdates(self, user_initiated: bool = True):
-        """Trigger update check."""
-        self.update_mgr.check_for_updates(user_initiated=user_initiated)
-
-    @Slot()
-    def downloadUpdate(self):
-        """Download latest release installer."""
-        self.update_mgr.download_latest_installer()
+    @Slot(result=str)
+    def getAppVersion(self) -> str:
+        """Return currently installed application version."""
+        return APP_VERSION
 
     @Slot(str)
-    def installUpdate(self, installer_path: str):
-        """Launch update installation."""
-        self.update_mgr.launch_installer(installer_path)
+    @Slot(bool)
+    @Slot()
+    def checkForUpdates(self, channel_or_user_initiated: Any = "stable"):
+        """Trigger update check for specified channel ('stable' or 'beta')."""
+        channel = "stable"
+        if isinstance(channel_or_user_initiated, str) and channel_or_user_initiated.lower() in ("stable", "beta"):
+            channel = channel_or_user_initiated.lower()
+        elif hasattr(self, "settings") and getattr(self.settings, "update_channel", None):
+            channel = self.settings.update_channel.lower()
+        self.update_mgr.check_for_updates(channel=channel)
+
+    @Slot(str)
+    @Slot()
+    def downloadUpdate(self, release_json: str = ""):
+        """Download latest release installer."""
+        release_data = None
+        if release_json:
+            try:
+                release_data = json.loads(release_json)
+            except Exception:
+                pass
+        if not release_data:
+            release_data = self.update_mgr.current_release_data
+        if release_data:
+            self.update_mgr.start_download(release_data)
+        else:
+            self.update_mgr.update_error.emit("No release candidate available for download.")
+
+    @Slot(str)
+    @Slot()
+    def installUpdate(self, installer_path: str = ""):
+        """Launch update installation with handoff to updater bootstrapper."""
+        target = Path(installer_path) if installer_path else self.update_mgr.staged_installer_path
+        self.update_mgr.launch_installer(target, silent=True)
 
     # -------------------------------------------------------------
     # Internal Signal Forwarding
     # -------------------------------------------------------------
     def _on_update_available(self, info: Dict[str, Any]):
         info["available"] = True
+        info["installed_version"] = APP_VERSION
+        info["version"] = info.get("tag_name", "").lstrip("v")
         self.updateCheckResult.emit(json.dumps(info))
+        self.statusChanged.emit(f"New Update Available: {info.get('tag_name')}", "#4EC9B0")
 
-    def _on_update_not_available(self, version: str):
-        info = {"available": False, "version": version, "body": "You have the latest version."}
+    def _on_update_not_available(self, message: str):
+        info = {
+            "available": False,
+            "error": False,
+            "version": APP_VERSION,
+            "installed_version": APP_VERSION,
+            "message": message,
+            "body": message
+        }
         self.updateCheckResult.emit(json.dumps(info))
+        self.statusChanged.emit(f"Update Check: {message}", "#4EC9B0")
 
     def _on_update_error(self, err_msg: str):
+        info = {
+            "available": False,
+            "error": True,
+            "version": APP_VERSION,
+            "installed_version": APP_VERSION,
+            "message": f"Update Check Failed: {err_msg}",
+            "body": f"Error: {err_msg}"
+        }
+        self.updateCheckResult.emit(json.dumps(info))
+        self.verificationError.emit(f"Update Check Error: {err_msg}")
         self.statusChanged.emit(f"Update Check Error: {err_msg}", "#E06C75")
 
     def _on_download_progress(self, dl: int, tot: int, pct: float):
         self.downloadProgress.emit(dl, tot, pct)
 
-    def _on_ready_to_install(self, path: str):
-        self.readyToInstall.emit(path)
+    def _on_ready_to_install(self, path: Path):
+        self.readyToInstall.emit(str(path))
 
     def _on_verification_failed(self, err: str):
         self.verificationError.emit(err)

@@ -3,6 +3,34 @@
 All notable changes to LuxSense Pro are documented in this file.
 Version formatting follows [Semantic Versioning](https://semver.org/).
 
+## [2.3.0] - 2026-11-15
+
+### Added
+- **Unified Software & Physical Firmware Update Architecture:** Complete update architecture bridging the high-level Windows application and physical Arduino Uno (ATmega328P) microcontroller firmware.
+- **Ed25519 Cryptographic Microcode Signing:** Asymmetric signature verification for all microcontroller payloads with embedded public key and SHA-256 binary validation.
+- **Dedicated ATmega328P Firmware Update Center:** Embedded sub-tab in Settings with real-time MCU status, 32 KB flash memory gauge, signature verification badges, and live diagnostic terminal.
+- **Strict Opt-In Firmware Security:** Microcontroller flashing requires explicit operator authorization via confirmation checkboxes; software updates never trigger automated flashing.
+- **Safe 5-Phase Flashing State Machine:** Pre-flight cryptographic check -> graceful telemetry teardown -> serial port release -> programmer execution (`arduino-cli` / `avrdude`) -> post-flash bootloader delay -> handshake query (`ID:GY30_LUX_PRO_2026`) & BH1750 I2C probe -> telemetry resumption.
+- **Bootloader Recovery Documentation & In-App Guide:** Clear documentation of ATmega328P 32 KB single-bank memory constraints, Optiboot 1.5s power-cycle recovery window, and 6-pin ICSP header recovery.
+- **Dynamic In-App Update Center:** Dynamic version discovery via `getAppVersion()` bridge call, explicit "LuxSense Pro is up to date" banners, detailed error alerts with retry capabilities, and automatic release asset manifest checksum lookup.
+- **Comprehensive Upgrade Lifecycle Test Suite:** Added end-to-end tests for version detection, download failure cleanup, SHA-256 mismatch rejection, and bootstrapper rollback.
+
+### Fixed
+- **Update Center Invocation Slots:** Fixed argument signature mismatch between JavaScript frontend and Qt WebChannel backend for `checkForUpdates`, `downloadUpdate`, and `installUpdate`.
+- **Silent Update Failures:** Resolved issue where update errors failed to notify the UI, leaving the update check in a perpetual loading state.
+- **Website Production Alignment:** Updated official website hero section, download center, SHA-256 checksums, and documentation tabs to reflect the verified v2.3.0 release.
+
+## [2.2.0] - 2026-11-15
+
+### Added
+- **Native Windows Titlebar Controls:** Enforced standard Windows native titlebar controls through PySide6 `QMainWindow` with complete Win32 window manager integration (Aero Snap, taskbar pinning, Alt+Tab icon, native drag/resize).
+- **Sampling Rate Synchronization:** Updated live oscillogram buffer sizing and UI copy to reflect the physical BH1750 4.0 Hz acquisition rate (250ms interval).
+- **Memory Leak Mitigation:** Added explicit unmount cleanup hooks (`dispose()` and `ResizeObserver.disconnect()`) across Apache ECharts instances.
+
+### Fixed
+- **Metrology Zero-Fabrication Guardrail:** Eradicated artificial `520.0 lx` fallback in `ScientificWorkspace.tsx`. If physical hardware is disconnected or unreadable, the system displays an explicit warning and refuses data entry.
+- **Typography Polish:** Replaced raw LaTeX math `$V(\lambda)$` with clean Unicode `V(λ)` in `TeamWorkspace.tsx`. Corrected corporate subtitle typography.
+
 ## [2.1.0] - 2026-11-12
 
 ### Added

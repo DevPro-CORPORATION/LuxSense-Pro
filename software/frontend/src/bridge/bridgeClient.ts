@@ -374,6 +374,13 @@ class BridgeClient {
     };
   }
 
+  public async getAppVersion(): Promise<string> {
+    if (this.backendObj?.getAppVersion) {
+      return await this.backendObj.getAppVersion();
+    }
+    return '2.3.0';
+  }
+
   public async saveSettings(settings: UserSettings): Promise<boolean> {
     if (this.backendObj?.saveSettings) {
       return await this.backendObj.saveSettings(JSON.stringify(settings));

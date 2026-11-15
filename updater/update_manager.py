@@ -222,6 +222,13 @@ class UpdateManager(QObject):
     def _on_check_error(self, err_msg: str):
         self.update_error.emit(err_msg)
 
+    def download_latest_installer(self):
+        """Downloads the installer asset for the current active release data."""
+        if self.current_release_data:
+            self.start_download(self.current_release_data)
+        else:
+            self.update_error.emit("No release candidate available to download.")
+
     def find_installer_asset(self, release_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Finds Windows installer executable in release assets."""
         assets = release_data.get("assets", [])
@@ -253,6 +260,40 @@ class UpdateManager(QObject):
                     if len(token) == 64 and all(c in "0123456789abcdefABCDEF" for c in token):
                         expected_sha = token.lower()
                         break
+            if expected_sha:
+                break
+
+        # If not in body, resolve from SHA256SUMS.txt or release-manifest.json in release assets
+        if not expected_sha:
+            for a in release_data.get("assets", []):
+                a_name = a.get("name", "").lower()
+                a_url = a.get("browser_download_url", "")
+                if a_name == "sha256sums.txt" and a_url:
+                    try:
+                        req = urllib.request.Request(
+                            a_url,
+                            headers={"User-Agent": f"LuxSensePro/{self.current_version}"}
+                        )
+                        with urllib.request.urlopen(req, timeout=10) as r:
+                            sums_dict = parse_sha256sums(r.read().decode("utf-8", errors="replace"))
+                            if filename in sums_dict:
+                                expected_sha = sums_dict[filename]
+                                break
+                    except Exception:
+                        pass
+                elif a_name == "release-manifest.json" and a_url:
+                    try:
+                        req = urllib.request.Request(
+                            a_url,
+                            headers={"User-Agent": f"LuxSensePro/{self.current_version}"}
+                        )
+                        with urllib.request.urlopen(req, timeout=10) as r:
+                            manifest = ReleaseManifest.from_json_str(r.read().decode("utf-8", errors="replace"))
+                            if filename in manifest.assets:
+                                expected_sha = manifest.assets[filename].sha256
+                                break
+                    except Exception:
+                        pass
 
         self._download_worker = DownloadWorker(download_url, filename, expected_sha, self.current_version)
         self._download_worker.progress.connect(self.download_progress.emit)
@@ -285,11 +326,18 @@ class UpdateManager(QObject):
         self.staged_installer_path = installer_path
         self.ready_to_install.emit(installer_path)
 
-    def launch_installer(self, installer_path: Optional[Path] = None, silent: bool = False):
+    def launch_installer(self, installer_path: Optional[Any] = None, silent: bool = False):
         """Executes updater bootstrapper and terminates current LuxSense Pro instance."""
         target_path = installer_path or self.staged_installer_path
-        if not target_path or not target_path.exists():
+        if not target_path:
             self.update_error.emit("Installer file missing or not verified.")
+            return
+
+        if isinstance(target_path, str):
+            target_path = Path(target_path)
+
+        if not target_path.exists():
+            self.update_error.emit(f"Installer binary not found at: {target_path}")
             return
 
         app_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parents[1]
