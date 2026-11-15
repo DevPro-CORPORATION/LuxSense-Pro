@@ -66,9 +66,10 @@ jobs:
           node-version: "20"
 
       - name: Build Frontend
+        working-directory: software/frontend
         run: |
-          npm --prefix software/frontend install
-          npm --prefix software/frontend run build
+          npm install
+          npm run build
 
       - name: Install Inno Setup
         run: |
