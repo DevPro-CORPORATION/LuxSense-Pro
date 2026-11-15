@@ -14,10 +14,10 @@ from typing import Dict, Any, Optional, List
 
 APP_NAME = "LuxSense Pro"
 APP_IDENTIFIER = "LuxSensePro"
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.2.0"
 ORG_NAME = "DevPro-CORP"
 GITHUB_OWNER = "DevPro-CORPORATION"
-GITHUB_REPO = "luxsense-pro"
+GITHUB_REPO = "LuxSense-Pro"
 DEFAULT_SERIAL_PORT = "COM5"
 DEFAULT_BAUD_RATE = 115200
 

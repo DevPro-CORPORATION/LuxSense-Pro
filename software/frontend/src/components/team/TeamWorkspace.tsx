@@ -136,7 +136,7 @@ export const TeamWorkspace: React.FC = () => {
               <span>Photometric Fidelity</span>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Strict conformity to the CIE 1931 photopic luminosity function $V(\lambda)$, ensuring measurements match standard human eye response without infrared contamination.
+              Strict conformity to the CIE 1931 photopic luminosity function V(λ), ensuring measurements match standard human eye response without infrared contamination.
             </p>
           </div>
 

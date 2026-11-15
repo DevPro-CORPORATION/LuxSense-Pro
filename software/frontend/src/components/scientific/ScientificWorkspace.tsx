@@ -86,7 +86,12 @@ export const ScientificWorkspace: React.FC<ScientificWorkspaceProps> = ({ curren
 
   // Spatial actions
   const handleRecordSpatialPoint = async () => {
-    const lux = currentPacket ? currentPacket.cal_lux : 520.0;
+    if (!currentPacket || currentPacket.cal_lux === undefined || currentPacket.cal_lux === null) {
+      setActionNotice('Cannot record spatial point: Sensor offline or hardware reading unavailable.');
+      setTimeout(() => setActionNotice(null), 3500);
+      return;
+    }
+    const lux = currentPacket.cal_lux;
     const ptId = `P${spatialPoints.length + 1}`;
     await bridge.recordSpatialPoint(selectedSessionId, ptId, newPointLabel, newPointX, newPointY, lux);
     setActionNotice(`Recorded point ${ptId} (${newPointLabel}) at ${lux.toFixed(2)} lx`);

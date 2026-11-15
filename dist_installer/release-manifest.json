@@ -1,29 +1,29 @@
 {
-  "version": "2.1.0",
-  "tag_name": "v2.1.0",
+  "version": "2.2.0",
+  "tag_name": "v2.2.0",
   "channel": "stable",
-  "release_name": "LuxSense Pro v2.1.0 \u2014 Precision Optical Metrology & Release Engine",
-  "published_at": "2026-11-13T20:00:00Z",
+  "release_name": "LuxSense Pro v2.2.0 \u2014 UI Refinement & Metrology Excellence",
+  "published_at": "2026-11-15T15:30:00Z",
   "prerelease": false,
-  "release_notes": "Official release of LuxSense Pro v2.1.0 featuring an in-app Update Center with Stable and Beta channels, automated GitHub update infrastructure, SHA-256 verification, and persistent AppData user storage.",
+  "release_notes": "Official release of LuxSense Pro v2.2.0 featuring native Windows window controls, refined UI/UX layouts, high-DPI scaling, memory leak prevention in scientific charts, and complete metrology integrity.",
   "assets": {
-    "LuxSense-Pro-Setup-v2.1.0.exe": {
-      "filename": "LuxSense-Pro-Setup-v2.1.0.exe",
-      "sha256": "90ca74381124291c3e2bca241ed5c494c2e2f4f834aa592e26701c1d32595616",
-      "size": 221878110,
-      "url": "https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/LuxSense-Pro-Setup-v2.1.0.exe"
+    "LuxSense-Pro-Setup-v2.2.0.exe": {
+      "filename": "LuxSense-Pro-Setup-v2.2.0.exe",
+      "sha256": "8939f5c40bc73b7b7f6f6c7dbcbfdeefe8f520beffec1b7619e95137d73fe934",
+      "size": 223365635,
+      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.2.0/LuxSense-Pro-Setup-v2.2.0.exe"
     },
-    "LuxSense-Pro-v2.1.0-portable.zip": {
-      "filename": "LuxSense-Pro-v2.1.0-portable.zip",
-      "sha256": "f9a290e9bc85880f5d83738bc582db6f4542668d1706a926a461f8ac5bece7b1",
-      "size": 230613274,
-      "url": "https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/LuxSense-Pro-v2.1.0-portable.zip"
+    "LuxSense-Pro-v2.2.0-portable.zip": {
+      "filename": "LuxSense-Pro-v2.2.0-portable.zip",
+      "sha256": "87df5da2d8d48976c143fe92f3f0e3b532b7e4d28e3812455e8bce84b8ce8f66",
+      "size": 230630294,
+      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.2.0/LuxSense-Pro-v2.2.0-portable.zip"
     },
     "updater.exe": {
       "filename": "updater.exe",
-      "sha256": "e789441b9c006b9151f982ec3a669b45c70e4f6b4afb0d8cc1a3a23d28b57d74",
-      "size": 9396954,
-      "url": "https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/updater.exe"
+      "sha256": "f0832f91d6124443c34559cb224a6333ea1701dd45e6948a51323417ffb0021b",
+      "size": 9396469,
+      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.2.0/updater.exe"
     }
   }
 }

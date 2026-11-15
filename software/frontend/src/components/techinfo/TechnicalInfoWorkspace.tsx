@@ -19,11 +19,10 @@ export const TechnicalInfoWorkspace: React.FC = () => {
   useEffect(() => {
     if (!chartRef.current) return;
 
-    if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current, 'dark');
-      const ro = new ResizeObserver(() => chartInstance.current?.resize());
-      ro.observe(chartRef.current);
-    }
+    const inst = echarts.init(chartRef.current, 'dark');
+    chartInstance.current = inst;
+    const ro = new ResizeObserver(() => inst.resize());
+    ro.observe(chartRef.current);
 
     // Wavelengths from 380nm to 740nm
     const wavelengths = [
@@ -123,6 +122,12 @@ export const TechnicalInfoWorkspace: React.FC = () => {
     };
 
     chartInstance.current.setOption(option);
+
+    return () => {
+      ro.disconnect();
+      inst.dispose();
+      chartInstance.current = null;
+    };
   }, []);
 
   return (
@@ -139,7 +144,7 @@ export const TechnicalInfoWorkspace: React.FC = () => {
           </p>
         </div>
         <span className="text-xs font-mono text-zinc-400 bg-chassis-900 px-3 py-1 rounded border border-border">
-          REV 2.1 — SPECIFICATION
+          REV 2.2 — SPECIFICATION
         </span>
       </div>
 

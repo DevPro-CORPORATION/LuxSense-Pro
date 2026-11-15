@@ -24,7 +24,7 @@ from updater.manifest import ReleaseManifest, ReleaseAssetInfo, parse_sha256sums
 from updater.security import compute_sha256, verify_sha256, verify_authenticode
 
 GITHUB_OWNER = "DevPro-CORPORATION"
-GITHUB_REPO = "luxsense-pro"
+GITHUB_REPO = "LuxSense-Pro"
 GITHUB_API_RELEASES_URL = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases"
 
 def get_app_data_dir() -> Path:

@@ -31,6 +31,21 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
+  // Initialize and clean up ECharts instance
+  useEffect(() => {
+    if (!chartRef.current) return;
+    const inst = echarts.init(chartRef.current, 'dark');
+    chartInstance.current = inst;
+    const ro = new ResizeObserver(() => inst.resize());
+    ro.observe(chartRef.current);
+
+    return () => {
+      ro.disconnect();
+      inst.dispose();
+      chartInstance.current = null;
+    };
+  }, []);
+
   // Load existing profile from backend
   useEffect(() => {
     const loadProfile = async () => {
@@ -51,13 +66,7 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
 
   // Update ECharts dual-axis transfer curve
   useEffect(() => {
-    if (!chartRef.current) return;
-
-    if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current, 'dark');
-      const ro = new ResizeObserver(() => chartInstance.current?.resize());
-      ro.observe(chartRef.current);
-    }
+    if (!chartInstance.current) return;
 
     const rawDomain = [0, 200, 500, 1000, 2000, 5000, 10000];
     const transferCurve = rawDomain.map(x => [x, Math.max(0, (x + zeroOffset) * gainMultiplier)]);

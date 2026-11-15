@@ -200,8 +200,8 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
       packetId: packetId
     };
 
-    // Calculate max points based on sample rate (~2.5 Hz)
-    const maxPoints = Math.max(20, Math.floor(timeWindowSeconds * 2.5));
+    // Calculate max points based on sample rate (~4.0 Hz)
+    const maxPoints = Math.max(20, Math.floor(timeWindowSeconds * 4.0));
     dataSeries.current.push(newPt);
     if (dataSeries.current.length > maxPoints) {
       dataSeries.current.shift();

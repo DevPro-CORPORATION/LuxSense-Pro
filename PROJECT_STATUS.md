@@ -160,3 +160,21 @@ Testing conducted directly on physical silicon (Arduino Uno R3 on `COM5` with GY
 7. **GitHub Pages Deployment:** Workflow `43693147564` completed in 15s. Website verified returning HTTP 200 (23,403 bytes).
 8. **Update Center Integration:** Live `UpdateCheckWorker` successfully queries GitHub Releases REST API and validates available updates.
 9. **Remaining Blockers:** **NONE.** All remote deployment and acceptance requirements are 100% fulfilled.
+
+---
+
+## 11. v2.2.0 UI Refinement & Metrology Excellence Milestone
+
+**Branch:** `v2.2.0-refinement`  
+**Target Version:** `v2.2.0`  
+**Status:** **COMPLETE — PACKAGED & VERIFIED**
+
+### Key Deliverables & Verifications:
+1. **Native Window Controls:** Eradicated web-rendered minimize/maximize/close buttons from React `Header.tsx`. Enforced standard Windows native titlebar controls through PySide6 `QMainWindow` with complete Win32 window manager integration (Aero Snap, taskbar pinning, Alt+Tab icon, native drag/resize).
+2. **Metrology Zero-Fabrication Guardrail:** Removed artificial `520.0 lx` fallback in `ScientificWorkspace.tsx`. If physical hardware is disconnected or unreadable, the system displays an explicit warning and refuses data entry.
+3. **Sampling Rate Synchronization:** Updated live oscillogram buffer sizing in `InteractiveLuxChart.tsx` and UI copy in `LiveMonitorWorkspace.tsx` to reflect the physical BH1750 4.0 Hz acquisition rate (250ms interval).
+4. **Memory Leak Mitigation:** Added explicit unmount hooks (`dispose()` and `ResizeObserver.disconnect()`) across Apache ECharts instances in `CalibrationLaboratory.tsx`, `AnalyticsWorkspace.tsx`, and `TechnicalInfoWorkspace.tsx`.
+5. **Typography & Layout Polish:** Replaced raw LaTeX math `$V(\lambda)$` with clean Unicode `V(λ)` in `TeamWorkspace.tsx`. Corrected corporate subtitle typography `DEVPRO-CORP` and updated version tags to `2.2.0` across the application shell.
+6. **Comprehensive Automated Test Suite:** 28 of 28 unit and integration tests passing (`pytest tests/ -v`).
+7. **Production Packaging:** Generated `LuxSense-Pro-Setup-v2.2.0.exe` (223 MB) and `LuxSense-Pro-v2.2.0-portable.zip` (230 MB) alongside updated `SHA256SUMS.txt` and `release-manifest.json`.
+8. **Audit Documentation & Evidence:** Published `docs/UI_AUDIT_V2.2.0.md`, `docs/UI_FIXES_V2.2.0.md`, and 9 offscreen viewport evidence screenshots in `docs/evidence/`.

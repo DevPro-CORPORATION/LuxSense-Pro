@@ -31,6 +31,15 @@ export const AnalyticsWorkspace: React.FC = () => {
 
   const histRef = useRef<HTMLDivElement>(null);
   const histInstance = useRef<echarts.ECharts | null>(null);
+  const roRef = useRef<ResizeObserver | null>(null);
+
+  useEffect(() => {
+    return () => {
+      roRef.current?.disconnect();
+      histInstance.current?.dispose();
+      histInstance.current = null;
+    };
+  }, []);
 
   // Load telemetry records from SQLite database
   const loadData = async () => {
@@ -105,8 +114,8 @@ export const AnalyticsWorkspace: React.FC = () => {
 
     if (!histInstance.current) {
       histInstance.current = echarts.init(histRef.current, 'dark');
-      const ro = new ResizeObserver(() => histInstance.current?.resize());
-      ro.observe(histRef.current);
+      roRef.current = new ResizeObserver(() => histInstance.current?.resize());
+      roRef.current.observe(histRef.current);
     }
 
     const binCount = 16;

@@ -2,9 +2,9 @@
 ; Builds production Windows installer for LuxSense Pro with update & bootstrapper support
 
 #define MyAppName "LuxSense Pro"
-#define MyAppVersion "2.1.0"
+#define MyAppVersion "2.2.0"
 #define MyAppPublisher "DevPro-CORP"
-#define MyAppURL "https://github.com/DevPro-CORPORATION/luxsense-pro"
+#define MyAppURL "https://github.com/DevPro-CORPORATION/LuxSense-Pro"
 #define MyAppExeName "LuxSensePro.exe"
 
 [Setup]

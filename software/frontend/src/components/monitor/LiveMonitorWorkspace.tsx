@@ -288,7 +288,7 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
               Continuous Photodiode Oscillogram
             </span>
             <span className="text-[10px] font-mono text-zinc-400 px-2 py-0.5 rounded bg-chassis-900 border border-border">
-              2.5 Hz High-Res Stream
+              4.0 Hz High-Res Stream
             </span>
           </div>
 

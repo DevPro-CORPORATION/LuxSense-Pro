@@ -13,6 +13,7 @@ from typing import Optional, List, Dict, Any
 
 import serial.tools.list_ports
 from PySide6.QtCore import QObject, Signal, Slot, QTimer, QUrl, Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings
@@ -427,6 +428,13 @@ class LuxSenseWebWindow(QMainWindow):
         self.setMinimumSize(1120, 740)
         self.resize(1280, 840)
 
+        # Set window icon
+        icon_path = Path(__file__).resolve().parents[2] / "my_icon.ico"
+        if not icon_path.exists():
+            icon_path = Path.cwd() / "my_icon.ico"
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
+
         # Set dark palette styling
         self.setStyleSheet("background-color: #07080A; color: #DFE2E8;")
 
@@ -480,6 +488,12 @@ def run_desktop_app():
     app.setApplicationName("LuxSense Pro")
     app.setOrganizationName("DevPro Corporation")
     app.setOrganizationDomain("devpro-corp.github.io")
+
+    icon_path = Path(__file__).resolve().parents[2] / "my_icon.ico"
+    if not icon_path.exists():
+        icon_path = Path.cwd() / "my_icon.ico"
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
 
     dev_mode = "--dev" in sys.argv or bool(os.environ.get("VITE_DEV_SERVER"))
     window = LuxSenseWebWindow(dev_mode=dev_mode)

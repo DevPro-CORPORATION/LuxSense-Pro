@@ -167,7 +167,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
                 </span>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-chassis-850 border border-border text-zinc-400">
-                DevPro-CORPORATION / luxsense-pro
+                DevPro-CORPORATION / LuxSense-Pro
               </span>
             </div>
 
@@ -176,7 +176,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
               <div>
                 <div className="text-[10px] font-mono text-zinc-400 uppercase">Installed Version</div>
                 <div className="text-xl font-bold font-mono text-white mt-1">
-                  v2.1.0
+                  v2.2.0
                 </div>
                 <div className="text-[10px] font-mono text-metrology-green mt-0.5">
                   Current Active Build
@@ -186,7 +186,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
               <div>
                 <div className="text-[10px] font-mono text-zinc-400 uppercase">Latest Available</div>
                 <div className="text-xl font-bold font-mono text-metrology-green mt-1">
-                  {updateInfo?.version ? `v${updateInfo.version}` : 'v2.1.0'}
+                  {updateInfo?.version ? `v${updateInfo.version}` : 'v2.2.0'}
                 </div>
                 <div className="text-[10px] font-mono text-zinc-400 mt-0.5">
                   {updateInfo?.available ? 'Update Ready' : 'Up to Date'}

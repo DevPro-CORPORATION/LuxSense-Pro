@@ -14,7 +14,7 @@ import subprocess
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.2.0"
 DIST_DIR = ROOT_DIR / "dist"
 INSTALLER_DIR = ROOT_DIR / "dist_installer"
 ISCC_PATH = Path(r"C:\Users\AIMLOPS\AppData\Local\Programs\Inno Setup 6\ISCC.exe")
@@ -87,7 +87,7 @@ def step_build_inno_installer():
     if ISCC_PATH.exists():
         cmd = [str(ISCC_PATH), str(iss_file)]
         subprocess.run(cmd, check=True, cwd=str(ROOT_DIR))
-        print("Built LuxSense-Pro-Setup-v2.1.0.exe successfully.")
+        print(f"Built LuxSense-Pro-Setup-v{APP_VERSION}.exe successfully.")
     else:
         print(f"Searching for iscc in PATH...")
         subprocess.run(["iscc", str(iss_file)], check=True, cwd=str(ROOT_DIR))
@@ -128,7 +128,7 @@ def step_generate_checksums_and_manifest():
                 "filename": f.name,
                 "sha256": h,
                 "size": f.stat().st_size,
-                "url": f"https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v{APP_VERSION}/{f.name}"
+                "url": f"https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v{APP_VERSION}/{f.name}"
             }
 
     sums_file.write_text("\n".join(sums_lines) + "\n", encoding="utf-8")
@@ -137,10 +137,10 @@ def step_generate_checksums_and_manifest():
         "version": APP_VERSION,
         "tag_name": f"v{APP_VERSION}",
         "channel": "stable",
-        "release_name": f"LuxSense Pro v{APP_VERSION} — Precision Optical Metrology & Release Engine",
-        "published_at": "2026-11-13T20:00:00Z",
+        "release_name": f"LuxSense Pro v{APP_VERSION} — UI Refinement & Metrology Excellence",
+        "published_at": "2026-11-15T15:30:00Z",
         "prerelease": False,
-        "release_notes": "Official release of LuxSense Pro v2.1.0 featuring an in-app Update Center with Stable and Beta channels, automated GitHub update infrastructure, SHA-256 verification, and persistent AppData user storage.",
+        "release_notes": "Official release of LuxSense Pro v2.2.0 featuring native Windows window controls, refined UI/UX layouts, high-DPI scaling, memory leak prevention in scientific charts, and complete metrology integrity.",
         "assets": assets_manifest
     }
     manifest_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
