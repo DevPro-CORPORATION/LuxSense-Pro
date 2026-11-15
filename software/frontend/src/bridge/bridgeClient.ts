@@ -644,6 +644,25 @@ class BridgeClient {
     return "Firmware flashing log initialized.";
   }
 
+  public async checkPendingChangelog(): Promise<any> {
+    if (this.backendObj?.checkPendingChangelog) {
+      try {
+        const res = await this.backendObj.checkPendingChangelog();
+        return JSON.parse(res);
+      } catch (e) {
+        console.error('[Bridge] Failed to parse pending changelog:', e);
+      }
+    }
+    return { show: false };
+  }
+
+  public async acknowledgeUpdate(version: string): Promise<boolean> {
+    if (this.backendObj?.acknowledgeUpdate) {
+      return await this.backendObj.acknowledgeUpdate(version);
+    }
+    return true;
+  }
+
   public minimize(): void {
     if (this.backendObj?.minimizeWindow) this.backendObj.minimizeWindow();
   }

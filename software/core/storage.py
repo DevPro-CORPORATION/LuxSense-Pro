@@ -33,6 +33,22 @@ def get_app_data_dir() -> Path:
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir
 
+def is_newer_version(cand: str, base: Optional[str]) -> bool:
+    """Return True if cand version is strictly greater than base version."""
+    if not cand or not base:
+        return False
+    try:
+        from packaging.version import parse as parse_ver
+        return parse_ver(cand) > parse_ver(base)
+    except Exception:
+        def _to_tuple(v: str):
+            clean = "".join(c for c in v if c.isdigit() or c == ".").strip(".")
+            return tuple(int(x) for x in clean.split(".") if x.isdigit())
+        try:
+            return _to_tuple(cand) > _to_tuple(base)
+        except Exception:
+            return False
+
 @dataclass
 class UserSettings:
     serial_port: str = DEFAULT_SERIAL_PORT
@@ -44,10 +60,27 @@ class UserSettings:
     postponed_version: Optional[str] = None
     telemetry_logging: bool = True
     theme: str = "dark"                  # "dark", "light", or "system"
+    last_acknowledged_version: Optional[str] = None
+    previous_version: Optional[str] = None
 
     def __post_init__(self):
         if self.theme not in ("dark", "light", "system"):
             self.theme = "dark"
+
+    def should_show_changelog(self) -> bool:
+        """
+        Returns True only if an existing installation upgraded to a newer APP_VERSION.
+        Returns False on first launch, repeated launches of the same version, and failed updates/rollbacks.
+        """
+        if not self.last_acknowledged_version:
+            return False
+        return is_newer_version(APP_VERSION, self.last_acknowledged_version)
+
+    def acknowledge_version(self, version: str) -> None:
+        """Persist acknowledgement of version changelog card."""
+        self.last_acknowledged_version = version
+        self.previous_version = None
+        self.save()
 
     @classmethod
     def load(cls) -> "UserSettings":
@@ -61,10 +94,23 @@ class UserSettings:
                     data["theme"] = "dark"
                 elif data.get("theme") not in ("dark", "light", "system"):
                     data["theme"] = "dark"
-                return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+                # Check version progression
+                stored_ack = data.get("last_acknowledged_version")
+                prev = None
+                if stored_ack and is_newer_version(APP_VERSION, stored_ack):
+                    prev = stored_ack
+
+                settings = cls(
+                    **{k: v for k, v in data.items() if k in cls.__dataclass_fields__}
+                )
+                if prev:
+                    settings.previous_version = prev
+                return settings
             except Exception as e:
                 print(f"[Storage] Warning: Failed to load settings ({e}), using defaults.")
-        settings = cls()
+        # Brand new first launch: record current APP_VERSION so changelog doesn't pop up on cold install
+        settings = cls(last_acknowledged_version=APP_VERSION)
         settings.save()
         return settings
 

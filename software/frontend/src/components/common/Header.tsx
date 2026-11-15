@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { bridge, TelemetryPacket } from '../../bridge/bridgeClient';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   Activity, 
   Cpu, 
   Wifi, 
   WifiOff, 
   ShieldCheck, 
-  Layers
+  Layers,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -24,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   hardwareState = 'CONNECTING',
   isConnected
 }) => {
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [clock, setClock] = useState<string>('');
 
   useEffect(() => {
@@ -109,8 +114,55 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
 
-      {/* Right Controls & Clock */}
+      {/* Right Controls, Appearance Toggle & Clock */}
       <div className="flex items-center space-x-3">
+        {/* Global Appearance Toggle: Light / Dark / System */}
+        <div 
+          className="flex items-center bg-chassis-900 border border-border rounded p-0.5" 
+          role="group" 
+          aria-label="Global Appearance Mode"
+        >
+          <button
+            type="button"
+            onClick={() => setTheme('light')}
+            title="Light Mode (Standard High-Ambient Metrology)"
+            className={`p-1 rounded transition-colors flex items-center justify-center ${
+              theme === 'light'
+                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Sun className="w-3.5 h-3.5" />
+            <span className="sr-only">Light</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme('dark')}
+            title="Dark Mode (Low-Ambient Cleanroom Metrology)"
+            className={`p-1 rounded transition-colors flex items-center justify-center ${
+              theme === 'dark'
+                ? 'bg-metrology-green/20 text-metrology-green border border-metrology-green/40 shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Moon className="w-3.5 h-3.5" />
+            <span className="sr-only">Dark</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme('system')}
+            title={`System Sync (OS Theme: ${resolvedTheme.toUpperCase()})`}
+            className={`p-1 rounded transition-colors flex items-center justify-center ${
+              theme === 'system'
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Monitor className="w-3.5 h-3.5" />
+            <span className="sr-only">System</span>
+          </button>
+        </div>
+
         <div className="text-xs font-mono text-zinc-400 hidden sm:block bg-chassis-900 px-2.5 py-1 rounded border border-border/50">
           {clock}
         </div>

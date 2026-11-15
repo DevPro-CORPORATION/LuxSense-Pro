@@ -171,3 +171,52 @@ html.light ::-webkit-scrollbar-thumb:hover {
   }
 }
 
+/* Print / Save as PDF Stylesheet */
+@media print {
+  @page {
+    margin: 1.2cm;
+    size: A4 portrait;
+  }
+  
+  /* Hide non-printable app shell elements */
+  header,
+  aside,
+  .no-print,
+  button:not(.print-include) {
+    display: none !important;
+  }
+
+  /* Reset body and container backgrounds for pristine paper print */
+  body, html, #root {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Expand modal to full document width without backdrop darkening */
+  div[role="dialog"] {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  div[role="dialog"] > div {
+    max-width: 100% !important;
+    max-height: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #FFFFFF !important;
+  }
+
+  /* Ensure high-contrast crisp text for physical printer & PDF rendering */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    text-shadow: none !important;
+  }
+}
+
+

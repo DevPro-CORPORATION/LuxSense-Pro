@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { StartupPOST } from './components/common/StartupPOST';
+import { PostUpdateChangelogModal, ChangelogData } from './components/common/PostUpdateChangelogModal';
 import { LiveMonitorWorkspace } from './components/monitor/LiveMonitorWorkspace';
 import { ScientificWorkspace } from './components/scientific/ScientificWorkspace';
 import { AnalyticsWorkspace } from './components/analytics/AnalyticsWorkspace';
@@ -25,8 +26,16 @@ export const App: React.FC = () => {
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const [calibration, setCalibration] = useState<CalibrationProfile | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
+  const [pendingChangelog, setPendingChangelog] = useState<ChangelogData | null>(null);
 
   useEffect(() => {
+    // Check if an update was recently installed and needs changelog acknowledgement
+    bridge.checkPendingChangelog().then((res) => {
+      if (res && res.show) {
+        setPendingChangelog(res);
+      }
+    }).catch(console.error);
+
     // Initial calibration profile load
     bridge.getCalibration().then((cal) => {
       setCalibration(cal);
@@ -74,6 +83,13 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  const handleAcknowledgeChangelog = () => {
+    if (pendingChangelog) {
+      bridge.acknowledgeUpdate(pendingChangelog.current_version).catch(console.error);
+    }
+    setPendingChangelog(null);
+  };
+
   return (
     <ThemeProvider>
       <div className="flex flex-col h-screen w-screen bg-chassis-900 text-[#DFE2E8] font-sans overflow-hidden select-none">
@@ -83,6 +99,14 @@ export const App: React.FC = () => {
             <StartupPOST onComplete={() => setShowStartup(false)} />
           )}
         </AnimatePresence>
+
+        {/* Post-Update Changelog Card & Release Experience */}
+        {!showStartup && pendingChangelog && (
+          <PostUpdateChangelogModal 
+            data={pendingChangelog}
+            onAcknowledge={handleAcknowledgeChangelog}
+          />
+        )}
 
         {/* Main Instrument Shell */}
         <Header 

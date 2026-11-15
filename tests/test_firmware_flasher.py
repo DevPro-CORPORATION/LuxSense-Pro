@@ -123,3 +123,61 @@ def test_flasher_user_abort_before_flash(valid_firmware):
     assert len(results) == 1
     assert results[0][0] is False
     assert "cancelled" in results[0][1].lower()
+
+def test_flasher_records_validation_phase_timing(valid_firmware):
+    hex_path, manifest_data = valid_firmware
+
+    worker = FirmwareFlashWorker(
+        port="COM99",
+        manifest_data=manifest_data,
+        hex_path=hex_path
+    )
+    worker.abort()
+    worker.run()
+
+    assert "validation_s" in worker.phase_timings
+    assert worker.phase_timings["validation_s"] >= 0.0
+
+def test_flasher_detects_sync_retries_and_warns(valid_firmware, monkeypatch):
+    hex_path, manifest_data = valid_firmware
+
+    # Mock serial availability check so it passes Phase 2
+    mock_ser = MagicMock()
+    monkeypatch.setattr("serial.Serial", lambda *args, **kwargs: mock_ser)
+
+    # Mock avrdude tools
+    monkeypatch.setattr("software.core.firmware_flasher.find_avrdude", lambda: (Path("avrdude.exe"), Path("avrdude.conf")))
+
+    # Mock subprocess to emit sync retry and fail
+    class MockProcess:
+        def __init__(self, *args, **kwargs):
+            import io
+            self.stdout = io.StringIO("avrdude: stk500_getsync() attempt 1 of 10: not in sync: resp=0x00\n")
+            self._exit = 1
+        def poll(self):
+            return 1
+        def wait(self):
+            return 1
+        def kill(self):
+            pass
+
+    monkeypatch.setattr("subprocess.Popen", MockProcess)
+
+    worker = FirmwareFlashWorker(
+        port="COM5",
+        manifest_data=manifest_data,
+        hex_path=hex_path,
+        current_firmware_version="1.0.0"
+    )
+
+    logs = []
+    worker.logEmitted.connect(lambda l: logs.append(l))
+    results = []
+    worker.flashCompleted.connect(lambda s, m: results.append((s, m)))
+
+    worker.run()
+
+    assert any("Bootloader sync retry detected" in line for line in logs)
+    assert "flash_write_verify_s" in worker.phase_timings
+    assert len(results) == 1
+    assert results[0][0] is False

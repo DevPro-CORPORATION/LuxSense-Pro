@@ -481,6 +481,65 @@ class BridgeBackend(QObject):
         self.verificationError.emit(err)
 
     # -------------------------------------------------------------
+    # Post-Update Changelog Experience Slots
+    # -------------------------------------------------------------
+    @Slot(result=str)
+    def checkPendingChangelog(self) -> str:
+        """
+        Check if the application restarted after an update and has a pending changelog.
+        Returns JSON with show: bool, previous_version, current_version, and release notes.
+        """
+        should_show = self.settings.should_show_changelog()
+        prev = self.settings.previous_version or "2.3.0"
+
+        info = {
+            "show": should_show,
+            "previous_version": prev,
+            "current_version": APP_VERSION,
+            "release_date": "2026-11-15",
+            "release_name": f"LuxSense Pro v{APP_VERSION} — Production Metrology & Performance Release",
+            "summary": "LuxSense Pro has been successfully updated to the latest certified release with complete dependency bundling, enhanced optical metrology, and high-performance hardware programming.",
+            "categories": [
+                {
+                    "title": "Appearance & UI Refinement",
+                    "badge": "UI/UX",
+                    "items": [
+                        "Global Light / Dark / System appearance toggle directly in application header",
+                        "Instant theme switching across all views, charts, and dialogs without restart",
+                        "High-contrast light mode styling tailored for bright ambient laboratory environments"
+                    ]
+                },
+                {
+                    "title": "Firmware & Programming Engine",
+                    "badge": "HARDWARE",
+                    "items": [
+                        "Sub-10-second ATmega328P firmware flashing with Optiboot STK500v1 protocol",
+                        "Non-blocking threaded stream reader eliminating Windows pipe deadlock",
+                        "Real-time bootloader synchronization retry detection & diagnostic warnings",
+                        "Comprehensive elapsed phase timing breakdown and safe cancellation recovery"
+                    ]
+                },
+                {
+                    "title": "Metrology & System Reliability",
+                    "badge": "STABILITY",
+                    "items": [
+                        "Dynamic ECharts reinitialization on appearance mode transitions",
+                        "Guaranteed user settings and calibration persistence in %APPDATA%",
+                        "Automated post-update release notes with paper-friendly print and PDF export"
+                    ]
+                }
+            ]
+        }
+        return json.dumps(info)
+
+    @Slot(str, result=bool)
+    def acknowledgeUpdate(self, version: str) -> bool:
+        """Mark update changelog as acknowledged so it does not appear again."""
+        target_ver = version or APP_VERSION
+        self.settings.acknowledge_version(target_ver)
+        return True
+
+    # -------------------------------------------------------------
     # Firmware Management Slots
     # -------------------------------------------------------------
     @Slot(result=str)

@@ -10,6 +10,8 @@ import sys
 import time
 import subprocess
 import re
+import queue
+import threading
 from pathlib import Path
 from typing import Optional, Tuple, Callable, Dict, Any
 
@@ -85,6 +87,7 @@ class FirmwareFlashWorker(QThread):
         self.stop_telemetry_fn = stop_telemetry_fn
         self.resume_telemetry_fn = resume_telemetry_fn
         self._is_aborted = False
+        self.phase_timings: Dict[str, float] = {}
 
         self.log_path = get_app_data_dir() / "firmware_flash.log"
 
@@ -102,10 +105,12 @@ class FirmwareFlashWorker(QThread):
             pass
 
     def run(self):
+        t_global_start = time.monotonic()
         self._log(f"=== Starting Firmware Update for Arduino Uno on {self.port} ===")
         self._log(f"Log destination: {self.log_path}")
 
         # PHASE 1: VALIDATING
+        t_val_start = time.monotonic()
         self.stateChanged.emit("VALIDATING")
         self.progressChanged.emit(5, "Verifying digital signature and hex integrity...")
         self._log("Phase 1: Validating firmware package and publisher signature...")
@@ -119,6 +124,9 @@ class FirmwareFlashWorker(QThread):
             expected_board=target_fqbn,
             expected_mcu="atmega328p"
         )
+        t_val_elapsed = time.monotonic() - t_val_start
+        self.phase_timings["validation_s"] = round(t_val_elapsed, 3)
+
         if not ok:
             self._log(f"CRITICAL: Firmware package rejection: {msg}")
             self.stateChanged.emit("FAILED")
@@ -126,7 +134,7 @@ class FirmwareFlashWorker(QThread):
             self.flashCompleted.emit(False, f"Security rejection: {msg}")
             return
 
-        self._log(f"Digital signature valid: {manifest.publisher}")
+        self._log(f"Phase 1 complete in {t_val_elapsed:.3f}s: signature verified ({manifest.publisher}).")
         self._log(f"Target: {manifest.target_board} ({manifest.target_mcu} @ {manifest.clock_mhz}MHz)")
         self._log(f"SHA-256 Digest: {manifest.hex_sha256}")
 
@@ -136,7 +144,8 @@ class FirmwareFlashWorker(QThread):
             self.flashCompleted.emit(False, "Update cancelled.")
             return
 
-        # PHASE 2: STOPPING TELEMETRY
+        # PHASE 2: STOPPING TELEMETRY & PORT RELEASE
+        t_port_start = time.monotonic()
         self.stateChanged.emit("STOPPING_TELEMETRY")
         self.progressChanged.emit(15, "Releasing serial port...")
         self._log(f"Phase 2: Stopping active telemetry loop on {self.port}...")
@@ -163,7 +172,12 @@ class FirmwareFlashWorker(QThread):
                 self.resume_telemetry_fn()
             return
 
-        # PHASE 3: PREPARING
+        t_port_elapsed = time.monotonic() - t_port_start
+        self.phase_timings["port_release_s"] = round(t_port_elapsed, 3)
+        self._log(f"Phase 2 complete in {t_port_elapsed:.3f}s: serial port {self.port} released.")
+
+        # PHASE 3: PREPARING TOOLCHAIN
+        t_prep_start = time.monotonic()
         self.stateChanged.emit("PREPARING")
         self.progressChanged.emit(25, "Configuring programming tool...")
         self._log("Phase 3: Preparing programmer toolchain...")
@@ -212,14 +226,25 @@ class FirmwareFlashWorker(QThread):
                 self.resume_telemetry_fn()
             return
 
-        self._log(f"Selected flasher: {flasher_type}")
+        t_prep_elapsed = time.monotonic() - t_prep_start
+        self.phase_timings["toolchain_prep_s"] = round(t_prep_elapsed, 3)
+        self._log(f"Phase 3 complete in {t_prep_elapsed:.3f}s: selected {flasher_type}.")
         self._log(f"Command: {' '.join(cmd)}")
         self._log("WARNING: DO NOT DISCONNECT USB CABLE OR CYCLE POWER DURING FLASHING!")
 
-        # PHASE 4: FLASHING
+        if self._is_aborted:
+            self._log("Flash aborted by user prior to programmer invocation.")
+            self.stateChanged.emit("FAILED")
+            self.flashCompleted.emit(False, "Update cancelled.")
+            if self.resume_telemetry_fn:
+                self.resume_telemetry_fn()
+            return
+
+        # PHASE 4: FLASHING & VERIFICATION
+        t_flash_start = time.monotonic()
         self.stateChanged.emit("FLASHING")
         self.progressChanged.emit(35, "Writing flash memory to ATmega328P...")
-        self._log("Phase 4: Initiating physical flash programming...")
+        self._log("Phase 4: Initiating physical flash programming (Optiboot STK500v1)...")
 
         try:
             process = subprocess.Popen(
@@ -231,16 +256,56 @@ class FirmwareFlashWorker(QThread):
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             )
 
-            # Monitor progress with 40s timeout
-            start_time = time.monotonic()
-            timeout_seconds = 45.0
-            last_progress = 35
+            # Threaded non-blocking line reader to prevent Windows pipe deadlock
+            line_queue: queue.Queue = queue.Queue()
+
+            def _reader():
+                try:
+                    for l in iter(process.stdout.readline, ''):
+                        line_queue.put(l)
+                except Exception:
+                    pass
+                finally:
+                    try:
+                        if process.stdout:
+                            process.stdout.close()
+                    except Exception:
+                        pass
+
+            reader_thread = threading.Thread(target=_reader, daemon=True)
+            reader_thread.start()
+
+            timeout_seconds = 25.0  # Physical write takes 5-8s; 25s catches stalled retries
+            sync_retry_detected = False
 
             while True:
-                if time.monotonic() - start_time > timeout_seconds:
+                now = time.monotonic()
+                if self._is_aborted:
                     process.kill()
-                    err = f"Programming timed out after {timeout_seconds}s. Device may be unresponsive."
-                    self._log(f"ERROR: {err}")
+                    self._log("FLASH ABORTED: Terminating programmer subprocess on user request.")
+                    self._log(
+                        "RECOVERY GUIDANCE: ATmega328P Optiboot bootloader in high flash memory (0x7E00) "
+                        "is write-protected and undamaged. To restore, re-initiate firmware flash."
+                    )
+                    self.stateChanged.emit("FAILED")
+                    self.progressChanged.emit(0, "Flash cancelled.")
+                    self.flashCompleted.emit(False, "Update cancelled.")
+                    if self.resume_telemetry_fn:
+                        self.resume_telemetry_fn()
+                    return
+
+                if now - t_flash_start > timeout_seconds:
+                    process.kill()
+                    err = (
+                        f"Microcontroller programming timed out after {timeout_seconds:.1f}s. "
+                        "The bootloader did not complete synchronization. "
+                        "Verify USB connection, DTR auto-reset capacitor, and COM port availability."
+                    )
+                    self._log(f"CRITICAL ERROR: {err}")
+                    self._log(
+                        "RECOVERY GUIDANCE: ATmega328P Optiboot bootloader in high flash memory (0x7E00) "
+                        "remains safe and undamaged. Press hardware RESET on Arduino Uno to recover, then retry."
+                    )
                     self.stateChanged.emit("FAILED")
                     self.progressChanged.emit(0, "Upload timeout.")
                     self.flashCompleted.emit(False, err)
@@ -248,14 +313,20 @@ class FirmwareFlashWorker(QThread):
                         self.resume_telemetry_fn()
                     return
 
-                line = process.stdout.readline()
-                if not line and process.poll() is not None:
-                    break
-
-                if line:
+                try:
+                    line = line_queue.get(timeout=0.1)
                     line_clean = line.strip()
                     if line_clean:
                         self._log(f"  {line_clean}")
+
+                        # Detect bootloader sync retries in real-time
+                        if "stk500_getsync()" in line_clean or "programmer is not responding" in line_clean:
+                            if not sync_retry_detected:
+                                sync_retry_detected = True
+                                self._log(
+                                    "DIAGNOSTIC WARNING: Bootloader sync retry detected. "
+                                    "DTR auto-reset may have stalled or COM port is busy."
+                                )
 
                         # Estimate progress based on avrdude output
                         if "Writing" in line_clean and "%" in line_clean:
@@ -271,10 +342,29 @@ class FirmwareFlashWorker(QThread):
                                 mapped_pct = 70 + int(pct * 0.15)
                                 self.progressChanged.emit(mapped_pct, f"Verifying flash: {pct}%")
 
+                except queue.Empty:
+                    if process.poll() is not None:
+                        # Drain any remaining lines in queue
+                        while not line_queue.empty():
+                            try:
+                                rem = line_queue.get_nowait().strip()
+                                if rem:
+                                    self._log(f"  {rem}")
+                            except queue.Empty:
+                                break
+                        break
+
             exit_code = process.wait()
+            t_flash_elapsed = time.monotonic() - t_flash_start
+            self.phase_timings["flash_write_verify_s"] = round(t_flash_elapsed, 3)
+
             if exit_code != 0:
                 err = f"Flasher exited with error code {exit_code}. Flash write failed."
                 self._log(f"ERROR: {err}")
+                self._log(
+                    "RECOVERY GUIDANCE: ATmega328P Optiboot bootloader in high flash memory (0x7E00) "
+                    "remains intact. Disconnect and reconnect the USB cable, then re-flash."
+                )
                 self.stateChanged.emit("FAILED")
                 self.progressChanged.emit(0, "Flash process error.")
                 self.flashCompleted.emit(False, err)
@@ -291,10 +381,11 @@ class FirmwareFlashWorker(QThread):
                 self.resume_telemetry_fn()
             return
 
-        self._log("Programmer reports successful write and verification!")
+        self._log(f"Phase 4 complete in {t_flash_elapsed:.3f}s: programmer reports successful write and verification!")
         self.progressChanged.emit(85, "Rebooting microcontroller...")
 
         # PHASE 5: VERIFYING POST-FLASH OPERATION
+        t_verify_start = time.monotonic()
         self.stateChanged.emit("VERIFYING")
         self._log("Phase 5: Performing post-flash hardware-in-the-loop verification...")
         self._log("Waiting 2.5s for microcontroller auto-reset and bootloader initialization...")
@@ -331,6 +422,9 @@ class FirmwareFlashWorker(QThread):
                 self._log(f"  Attempt {attempt} connection exception: {e}")
                 time.sleep(1.0)
 
+        t_verify_elapsed = time.monotonic() - t_verify_start
+        self.phase_timings["post_flash_verify_s"] = round(t_verify_elapsed, 3)
+
         if not verified:
             err = (
                 "Flashing completed, but post-flash handshake verification failed. "
@@ -355,10 +449,25 @@ class FirmwareFlashWorker(QThread):
             self._log("Resuming application telemetry stream...")
             self.resume_telemetry_fn()
 
+        t_global_total = time.monotonic() - t_global_start
+        self.phase_timings["total_elapsed_s"] = round(t_global_total, 3)
+
+        self._log("======================================================================")
+        self._log("FIRMWARE FLASH PERFORMANCE & TIMING BREAKDOWN")
+        self._log("----------------------------------------------------------------------")
+        self._log(f"  Phase 1 — Cryptographic Validation:       {t_val_elapsed:6.3f} s")
+        self._log(f"  Phase 2 — Telemetry Teardown & Port:     {t_port_elapsed:6.3f} s")
+        self._log(f"  Phase 3 — Toolchain Detection & Config:  {t_prep_elapsed:6.3f} s")
+        self._log(f"  Phase 4 — ATmega328P Flash & Verify:     {t_flash_elapsed:6.3f} s")
+        self._log(f"  Phase 5 — Post-Flash Hardware Handshake: {t_verify_elapsed:6.3f} s")
+        self._log("----------------------------------------------------------------------")
+        self._log(f"  Total Flashing Cycle Duration:           {t_global_total:6.3f} s")
+        self._log(f"  Status: SUCCESS (Microcode v{manifest.firmware_version} Operational)")
+        self._log("======================================================================")
+
         self.stateChanged.emit("SUCCESS")
         self.progressChanged.emit(100, "Firmware update completed successfully!")
-        self._log(f"=== Firmware Update Complete (Version v{manifest.firmware_version}) ===")
         self.flashCompleted.emit(
             True,
-            f"Successfully updated Arduino Uno firmware to v{manifest.firmware_version} on {self.port}."
+            f"Successfully updated Arduino Uno firmware to v{manifest.firmware_version} on {self.port} in {t_global_total:.1f}s."
         )
