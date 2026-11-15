@@ -12,6 +12,7 @@ import hashlib
 import zipfile
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
