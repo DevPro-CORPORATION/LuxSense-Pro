@@ -56,6 +56,11 @@ type UpdateResultListener = (result: any) => void;
 type DownloadProgressListener = (downloaded: number, total: number, percent: number) => void;
 type ReadyToInstallListener = (path: string) => void;
 type VerificationErrorListener = (err: string) => void;
+type FirmwareStatusListener = (status: any) => void;
+type FirmwareCheckListener = (result: any) => void;
+type FirmwareProgressListener = (percent: number, phase: string) => void;
+type FirmwareCompletedListener = (success: boolean, message: string) => void;
+type FirmwareLogListener = (line: string) => void;
 
 class BridgeClient {
   private isQtConnected = false;
@@ -68,6 +73,11 @@ class BridgeClient {
   private downloadProgressListeners: DownloadProgressListener[] = [];
   private readyToInstallListeners: ReadyToInstallListener[] = [];
   private verificationErrorListeners: VerificationErrorListener[] = [];
+  private firmwareStatusListeners: FirmwareStatusListener[] = [];
+  private firmwareCheckListeners: FirmwareCheckListener[] = [];
+  private firmwareProgressListeners: FirmwareProgressListener[] = [];
+  private firmwareCompletedListeners: FirmwareCompletedListener[] = [];
+  private firmwareLogListeners: FirmwareLogListener[] = [];
 
   // Standalone simulation state
   private simulationInterval: any = null;
@@ -144,6 +154,46 @@ class BridgeClient {
     if (this.backendObj.verificationError) {
       this.backendObj.verificationError.connect((err: string) => {
         this.verificationErrorListeners.forEach(fn => fn(err));
+      });
+    }
+
+    if (this.backendObj.firmwareStatusChanged) {
+      this.backendObj.firmwareStatusChanged.connect((jsonStr: string) => {
+        try {
+          const st = JSON.parse(jsonStr);
+          this.firmwareStatusListeners.forEach(fn => fn(st));
+        } catch {
+          this.firmwareStatusListeners.forEach(fn => fn(jsonStr));
+        }
+      });
+    }
+
+    if (this.backendObj.firmwareCheckResult) {
+      this.backendObj.firmwareCheckResult.connect((jsonStr: string) => {
+        try {
+          const res = JSON.parse(jsonStr);
+          this.firmwareCheckListeners.forEach(fn => fn(res));
+        } catch {
+          this.firmwareCheckListeners.forEach(fn => fn({ available: false, error: jsonStr }));
+        }
+      });
+    }
+
+    if (this.backendObj.firmwareFlashProgress) {
+      this.backendObj.firmwareFlashProgress.connect((pct: number, phase: string) => {
+        this.firmwareProgressListeners.forEach(fn => fn(pct, phase));
+      });
+    }
+
+    if (this.backendObj.firmwareFlashCompleted) {
+      this.backendObj.firmwareFlashCompleted.connect((success: boolean, msg: string) => {
+        this.firmwareCompletedListeners.forEach(fn => fn(success, msg));
+      });
+    }
+
+    if (this.backendObj.firmwareLogEmitted) {
+      this.backendObj.firmwareLogEmitted.connect((line: string) => {
+        this.firmwareLogListeners.forEach(fn => fn(line));
       });
     }
   }
@@ -226,6 +276,41 @@ class BridgeClient {
     this.verificationErrorListeners.push(cb);
     return () => {
       this.verificationErrorListeners = this.verificationErrorListeners.filter(f => f !== cb);
+    };
+  }
+
+  public onFirmwareStatus(cb: FirmwareStatusListener) {
+    this.firmwareStatusListeners.push(cb);
+    return () => {
+      this.firmwareStatusListeners = this.firmwareStatusListeners.filter(f => f !== cb);
+    };
+  }
+
+  public onFirmwareCheckResult(cb: FirmwareCheckListener) {
+    this.firmwareCheckListeners.push(cb);
+    return () => {
+      this.firmwareCheckListeners = this.firmwareCheckListeners.filter(f => f !== cb);
+    };
+  }
+
+  public onFirmwareFlashProgress(cb: FirmwareProgressListener) {
+    this.firmwareProgressListeners.push(cb);
+    return () => {
+      this.firmwareProgressListeners = this.firmwareProgressListeners.filter(f => f !== cb);
+    };
+  }
+
+  public onFirmwareFlashCompleted(cb: FirmwareCompletedListener) {
+    this.firmwareCompletedListeners.push(cb);
+    return () => {
+      this.firmwareCompletedListeners = this.firmwareCompletedListeners.filter(f => f !== cb);
+    };
+  }
+
+  public onFirmwareLog(cb: FirmwareLogListener) {
+    this.firmwareLogListeners.push(cb);
+    return () => {
+      this.firmwareLogListeners = this.firmwareLogListeners.filter(f => f !== cb);
     };
   }
 
@@ -486,6 +571,68 @@ class BridgeClient {
       return await this.backendObj.getSerialLatency();
     }
     return 1.4;
+  }
+
+  // Firmware Management Methods
+  public async getFirmwareStatus(): Promise<any> {
+    if (this.backendObj?.getFirmwareStatus) {
+      const res = await this.backendObj.getFirmwareStatus();
+      return JSON.parse(res);
+    }
+    return {
+      board: "Arduino Uno R3",
+      mcu: "ATmega328P (16MHz)",
+      bootloader: "Optiboot v4.4 (STK500v1)",
+      port: "COM5",
+      baud_rate: 115200,
+      installed_version: "1.2.0",
+      is_connected: true,
+      sensor: "BH1750 (0x23 / 0x5C)",
+      hardware_state: "LIVE MEASUREMENT"
+    };
+  }
+
+  public async checkFirmwareUpdates(): Promise<any> {
+    if (this.backendObj?.checkFirmwareUpdates) {
+      const res = await this.backendObj.checkFirmwareUpdates();
+      return JSON.parse(res);
+    }
+    return {
+      available: true,
+      valid: true,
+      message: "Valid DevPro-CORP Ed25519 Publisher Signature",
+      manifest: {
+        firmware_version: "2.0.0",
+        release_name: "LuxSense Pro Microcode v2.0.0 (Scientific Radiometry)",
+        target_board: "arduino:avr:uno",
+        target_mcu: "atmega328p",
+        bootloader: "optiboot",
+        clock_mhz: 16,
+        release_notes: "Dynamic dual-address I2C detection, handshake verification, and explicit disconnection reporting.",
+        publisher: "DevPro-CORP Root Authority",
+        hex_sha256: "0d252ba9d2fbe909055ffece802cd815879001916b41587d278c33ba19cc5c23"
+      }
+    };
+  }
+
+  public async startFirmwareFlash(port: string, hexPath: string = '', allowDowngrade: boolean = false): Promise<boolean> {
+    if (this.backendObj?.startFirmwareFlash) {
+      return await this.backendObj.startFirmwareFlash(port, hexPath, allowDowngrade);
+    }
+    return true;
+  }
+
+  public abortFirmwareFlash(): void {
+    if (this.backendObj?.abortFirmwareFlash) {
+      this.backendObj.abortFirmwareFlash();
+    }
+  }
+
+  public async getFirmwareDiagnosticLogs(): Promise<string> {
+    if (this.backendObj?.getFirmwareDiagnosticLogs) {
+      return await this.backendObj.getFirmwareDiagnosticLogs();
+    }
+    return "Firmware flashing log initialized.";
   }
 
   public minimize(): void {

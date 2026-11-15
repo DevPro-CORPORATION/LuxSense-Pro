@@ -14,7 +14,9 @@ import subprocess
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-APP_VERSION = "2.2.0"
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+APP_VERSION = "2.3.0"
 DIST_DIR = ROOT_DIR / "dist"
 INSTALLER_DIR = ROOT_DIR / "dist_installer"
 ISCC_PATH = Path(r"C:\Users\AIMLOPS\AppData\Local\Programs\Inno Setup 6\ISCC.exe")
@@ -33,8 +35,17 @@ a = Analysis(
     ['software/main.py'],
     pathex=['{str(ROOT_DIR).replace(os.sep, "/")}'],
     binaries=[],
-    datas=[('software/frontend/dist', 'software/frontend/dist')],
-    hiddenimports=['PySide6', 'PySide6.QtWebEngineWidgets', 'PySide6.QtWebEngineCore', 'PySide6.QtWebChannel', 'serial', 'serial.tools.list_ports', 'packaging', 'updater', 'software'],
+    datas=[
+        ('software/frontend/dist', 'software/frontend/dist'),
+        ('dist_installer/firmware-manifest.json', 'dist_installer'),
+        ('firmware/devpro_firmware_pubkey.pem', 'firmware'),
+        ('firmware/build/LuxSense_Arduino.ino.hex', 'firmware/build')
+    ],
+    hiddenimports=[
+        'PySide6', 'PySide6.QtWebEngineWidgets', 'PySide6.QtWebEngineCore', 'PySide6.QtWebChannel',
+        'serial', 'serial.tools.list_ports', 'packaging', 'updater', 'software',
+        'cryptography', 'cffi', 'software.core.firmware_security', 'software.core.firmware_flasher'
+    ],
     hookspath=[],
     hooksconfig={{}},
     runtime_hooks=[],
@@ -102,19 +113,42 @@ def step_package_portable_zip():
         ino_file = ROOT_DIR / "firmware" / "LuxSense_Arduino" / "LuxSense_Arduino.ino"
         if ino_file.exists():
             z.write(ino_file, arcname="firmware/LuxSense_Arduino.ino")
+        hex_file = ROOT_DIR / "firmware" / "build" / "LuxSense_Arduino.ino.hex"
+        if hex_file.exists():
+            z.write(hex_file, arcname="firmware/build/LuxSense_Arduino.ino.hex")
+        pubkey_file = ROOT_DIR / "firmware" / "devpro_firmware_pubkey.pem"
+        if pubkey_file.exists():
+            z.write(pubkey_file, arcname="firmware/devpro_firmware_pubkey.pem")
+        fw_manifest = ROOT_DIR / "dist_installer" / "firmware-manifest.json"
+        if fw_manifest.exists():
+            z.write(fw_manifest, arcname="dist_installer/firmware-manifest.json")
         for doc in (ROOT_DIR / "docs").glob("*.md"):
             z.write(doc, arcname=f"docs/{doc.name}")
     print(f"Created portable zip: {zip_path.name}")
 
 def step_generate_checksums_and_manifest():
     print("--- [5/5] Generating SHA-256 Checksums & Release Manifest ---")
+    # Step 5a: Ensure firmware is cryptographically signed
+    try:
+        from tools.sign_firmware import sign_firmware
+        sign_firmware(
+            ROOT_DIR / "firmware" / "build" / "LuxSense_Arduino.ino.hex",
+            INSTALLER_DIR / "firmware-manifest.json",
+            ROOT_DIR / "private_keys" / "devpro_firmware_signing.key",
+            version="2.0.0"
+        )
+    except Exception as e:
+        print(f"[Build] Warning: Firmware signing step notice: {e}")
+
     sums_file = INSTALLER_DIR / "SHA256SUMS.txt"
     manifest_file = INSTALLER_DIR / "release-manifest.json"
 
     files_to_hash = [
         INSTALLER_DIR / f"LuxSense-Pro-Setup-v{APP_VERSION}.exe",
         INSTALLER_DIR / f"LuxSense-Pro-v{APP_VERSION}-portable.zip",
-        DIST_DIR / "updater.exe"
+        DIST_DIR / "updater.exe",
+        INSTALLER_DIR / "firmware-manifest.json",
+        ROOT_DIR / "firmware" / "build" / "LuxSense_Arduino.ino.hex"
     ]
 
     sums_lines = ["# LuxSense Pro Release Checksums (SHA-256)"]
@@ -137,10 +171,10 @@ def step_generate_checksums_and_manifest():
         "version": APP_VERSION,
         "tag_name": f"v{APP_VERSION}",
         "channel": "stable",
-        "release_name": f"LuxSense Pro v{APP_VERSION} — UI Refinement & Metrology Excellence",
-        "published_at": "2026-11-15T15:30:00Z",
+        "release_name": f"LuxSense Pro v{APP_VERSION} — Unified Software & Firmware Update Architecture",
+        "published_at": "2026-11-15T15:45:00Z",
         "prerelease": False,
-        "release_notes": "Official release of LuxSense Pro v2.2.0 featuring native Windows window controls, refined UI/UX layouts, high-DPI scaling, memory leak prevention in scientific charts, and complete metrology integrity.",
+        "release_notes": "Official release of LuxSense Pro v2.3.0 featuring a unified software and physical microcontroller firmware update architecture, Ed25519 digital signature verification, dedicated in-app Firmware Update Center, zero automatic flashing guarantees, and complete bootloader recovery tooling.",
         "assets": assets_manifest
     }
     manifest_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")

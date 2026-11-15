@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center space-x-2">
             <span className="font-bold text-xs tracking-wider text-white uppercase">LuxSense Pro</span>
             <span className="text-[10px] px-1.5 py-0.2 bg-chassis-750 text-metrology-green border border-metrology-green/30 rounded font-mono font-semibold">
-              v2.2.0
+              v2.3.0
             </span>
           </div>
           <span className="text-[10px] text-zinc-400 tracking-tight font-mono">

@@ -2,7 +2,7 @@
 ; Builds production Windows installer for LuxSense Pro with update & bootstrapper support
 
 #define MyAppName "LuxSense Pro"
-#define MyAppVersion "2.2.0"
+#define MyAppVersion "2.3.0"
 #define MyAppPublisher "DevPro-CORP"
 #define MyAppURL "https://github.com/DevPro-CORPORATION/LuxSense-Pro"
 #define MyAppExeName "LuxSensePro.exe"
@@ -44,6 +44,9 @@ Source: "..\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\dist\updater.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\my_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\firmware\LuxSense_Arduino\LuxSense_Arduino.ino"; DestDir: "{app}\firmware"; Flags: ignoreversion
+Source: "..\firmware\build\LuxSense_Arduino.ino.hex"; DestDir: "{app}\firmware\build"; Flags: ignoreversion
+Source: "..\firmware\devpro_firmware_pubkey.pem"; DestDir: "{app}\firmware"; Flags: ignoreversion
+Source: "..\dist_installer\firmware-manifest.json"; DestDir: "{app}\dist_installer"; Flags: ignoreversion
 Source: "..\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion

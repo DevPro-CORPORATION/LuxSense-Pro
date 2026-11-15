@@ -144,7 +144,7 @@ export const TechnicalInfoWorkspace: React.FC = () => {
           </p>
         </div>
         <span className="text-xs font-mono text-zinc-400 bg-chassis-900 px-3 py-1 rounded border border-border">
-          REV 2.2 — SPECIFICATION
+          REV 2.3 — SPECIFICATION
         </span>
       </div>
 

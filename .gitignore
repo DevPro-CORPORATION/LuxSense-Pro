@@ -30,11 +30,17 @@ updater_bootstrapper/build/
 software/frontend/node_modules/
 software/frontend/.vite/
 
+# Cryptographic Private Keys (Protected Firmware & Release Signing)
+private_keys/
+*.key
+*.pem
+!firmware/devpro_firmware_pubkey.pem
+
 # Large binary builds (available as GitHub Release Assets)
 dist/
 dist_installer/*.exe
 dist_installer/*.zip
-tools/
+tools/arduino-cli/
 scratch/
 
 

@@ -144,7 +144,7 @@ export const StartupPOST: React.FC<StartupPOSTProps> = ({ onComplete }) => {
               className="w-28 h-28 rounded-full bg-chassis-900 border border-metrology-green/50 flex flex-col items-center justify-center text-center shadow-glow-green z-10"
             >
               <span className="text-[10px] font-mono text-zinc-400">LUXSENSE</span>
-              <span className="text-xl font-bold font-mono text-metrology-green">2.2.0</span>
+              <span className="text-xl font-bold font-mono text-metrology-green">2.3.0</span>
               <span className="text-[9px] font-mono text-zinc-400">DEVPRO-CORP</span>
             </motion.div>
           </div>

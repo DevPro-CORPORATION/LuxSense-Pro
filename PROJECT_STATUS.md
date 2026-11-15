@@ -178,3 +178,63 @@ Testing conducted directly on physical silicon (Arduino Uno R3 on `COM5` with GY
 6. **Comprehensive Automated Test Suite:** 28 of 28 unit and integration tests passing (`pytest tests/ -v`).
 7. **Production Packaging:** Generated `LuxSense-Pro-Setup-v2.2.0.exe` (223 MB) and `LuxSense-Pro-v2.2.0-portable.zip` (230 MB) alongside updated `SHA256SUMS.txt` and `release-manifest.json`.
 8. **Audit Documentation & Evidence:** Published `docs/UI_AUDIT_V2.2.0.md`, `docs/UI_FIXES_V2.2.0.md`, and 9 offscreen viewport evidence screenshots in `docs/evidence/`.
+
+---
+
+## 12. v2.3.0 Unified Software & Firmware Update Architecture Milestone
+
+**Branch:** `v2.3.0-firmware-architecture`  
+**Target Version:** `v2.3.0` (Software) / `v2.0.0` (Firmware Microcode)  
+**Status:** **COMPLETE — PACKAGED & VERIFIED**
+
+### Core Engineering Deliverables & Architectural Accomplishments:
+1. **Permanent Release Policy Compliance:**
+   - Compiled desktop application: `dist/LuxSensePro.exe` (PyInstaller 6.22.3, Python 3.15, PySide6 6.8.0.2).
+   - Compiled updater bootstrapper: `dist/updater.exe` with backup and rollback capabilities.
+   - Compiled Windows Inno Setup installer: `dist_installer/LuxSense-Pro-Setup-v2.3.0.exe` (230,339,403 bytes).
+   - Packaged standalone portable archive: `dist_installer/LuxSense-Pro-v2.3.0-portable.zip` (237,290,617 bytes) containing application, updater, signed firmware HEX, public key PEM, and documentation.
+   - Generated verified release checksum manifest: `dist_installer/SHA256SUMS.txt`.
+   - Generated software update manifest: `dist_installer/release-manifest.json`.
+   - Generated cryptographically signed firmware manifest: `dist_installer/firmware-manifest.json`.
+
+2. **Dedicated Firmware Update Center UI:**
+   - Implemented within `SettingsWorkspace.tsx` under a dedicated sub-tab navigation (`Software Updates & Ports` vs. `ATmega328P Firmware Center`).
+   - Displays real-time microcontroller status, current hardware COM port, baud rate (115,200 baud), target MCU (`ATmega328P`), and flash memory budget gauge (32 KB limit).
+   - Shows firmware release metadata, cryptographic SHA-256 fingerprint, Ed25519 signature validity badge, and change log.
+   - **Mandatory User Authorization Guard:** Software update checks never trigger flashing; the "Flash Microcode" action requires explicit user authorization via confirmation checkboxes.
+   - **Real-Time Flashing Terminal:** Integrated stdout/stderr diagnostic terminal with color-coded stage logs and animated percentage progress bar.
+   - **Interactive Bootloader Recovery Modal:** Direct in-app access to Optiboot power-cycle recovery guidelines and 6-pin ICSP header pinout references.
+
+3. **Firmware Cryptographic Security Engine (`software/core/firmware_security.py`):**
+   - **Signature Algorithm:** Ed25519 asymmetric public-key signature verification using `cryptography.hazmat.primitives.asymmetric.ed25519`.
+   - **Embedded Public Key:** DevPro Hardware Authority public key `9a1dc8f01459c05ebb77abbfc71f3b36b00f5aafdf1bc186914085d24bb52d0d` embedded into application core and exported as PEM `firmware/devpro_firmware_pubkey.pem`.
+   - **Binary Integrity:** SHA-256 cryptographic digest validation matching compiled Intel HEX binary against signed manifest.
+   - **Downgrade Rejection:** Strict semantic version checks reject downgrade attempts unless an explicit override flag is supplied.
+   - **Hardware Model Validation:** Rejects payloads not targeted to `arduino:avr:uno` and `atmega328p`.
+   - **Key Separation:** Private signing key stored securely in `private_keys/devpro_firmware_signing.key` (excluded from version control via `.gitignore`).
+   - **CLI Tool:** Developed `tools/sign_firmware.py` for automated signing in production build pipelines.
+
+4. **Multi-Phase Safe Flashing Pipeline (`software/core/firmware_flasher.py`):**
+   - **Phase 1 (Validation):** Cryptographic verification of manifest and Intel HEX digest.
+   - **Phase 2 (Telemetry Teardown):** Graceful shutdown of serial reader thread and full OS COM port release.
+   - **Phase 3 (Programmer Execution):** Dual-backend programmer discovery prioritizing `arduino-cli` with fallback to `avrdude` (`stk500v1`, 115200 baud). Includes 45-second watchdog timeout and real-time regex stdout/stderr parsing.
+   - **Phase 4 (Post-Flash Initialization):** 2.5s post-flash delay allowing Optiboot to exit bootloader and start application sketch, followed by handshake identification query (`ID:GY30_LUX_PRO_2026`) and I2C BH1750 probe (`0x23` or `0x5C`).
+   - **Phase 5 (Telemetry Resumption):** Graceful re-attachment of serial acquisition thread.
+   - **Log Persistence:** Every flashing event and diagnostic trace appended to `%APPDATA%\DevPro\LuxSensePro\firmware_flash.log`.
+
+5. **ATmega328P Single-Bank Recovery Architecture:**
+   - Accurately acknowledges the hardware limitation of the 32 KB single-bank ATmega328P (no dual-bank flash exists; no false dual-bank rollback promises).
+   - Authored comprehensive documentation:
+     - `docs/FIRMWARE_UPDATE_ARCHITECTURE.md`: Complete 5-phase lifecycle and cryptographic specification.
+     - `docs/FIRMWARE_RECOVERY_GUIDE.md`: Scenarios A, B, and C (Optiboot 1.5s bootloader window recovery and 6-pin ICSP header ISP recovery).
+
+6. **Test Suite & Verification Matrix:**
+   - **Automated Tests:** 43 passed, 1 skipped in 2.33s (`pytest tests/ -v`).
+   - **Firmware Security Tests:** 6/6 passed (valid signature, tampered manifest, corrupted HEX, downgrade rejection, incompatible MCU, unsigned payload).
+   - **Firmware Flasher Tests:** 4/4 passed (programmer discovery, security gate enforcement, unavailable port handling, user abort).
+   - **Simulated Failure Integration Tests:** 4/4 passed (wrong port, checksum mismatch, incompatible board, interrupted upload).
+   - **Physical Hardware Acceptance Test:** 1 test marked `NOT TESTED / SKIPPED` due to physical Arduino Uno being disconnected from USB bus, accurately adhering to strict metrology non-fabrication policies.
+   - **UI Viewport Evidence Captured:**
+     - `docs/evidence/ui_v230_settings_software.png`
+     - `docs/evidence/ui_v230_firmware_update_center.png`
+     - `docs/evidence/ui_v230_recovery_modal.png`

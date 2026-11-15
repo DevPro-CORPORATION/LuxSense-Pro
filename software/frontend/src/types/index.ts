@@ -120,3 +120,44 @@ export interface UpdateInfo {
   download_url?: string;
   sha256?: string;
 }
+
+export interface FirmwareStatus {
+  board: string;
+  mcu: string;
+  bootloader: string;
+  port: string;
+  baud_rate: number;
+  installed_version: string;
+  is_connected: boolean;
+  sensor: string;
+  hardware_state: string;
+}
+
+export interface FirmwareManifestInfo {
+  firmware_version: string;
+  release_name: string;
+  published_at: string;
+  target_board: string;
+  target_mcu: string;
+  bootloader: string;
+  baud_rate: number;
+  clock_mhz: number;
+  supported_sensors: string[];
+  min_app_version: string;
+  hex_filename: string;
+  hex_sha256: string;
+  hex_size: number;
+  release_notes: string;
+  publisher: string;
+  signature: string;
+}
+
+export interface FirmwareCheckResult {
+  available: boolean;
+  valid?: boolean;
+  message?: string;
+  manifest?: FirmwareManifestInfo;
+  hex_available?: boolean;
+  hex_path?: string;
+  error?: string;
+}

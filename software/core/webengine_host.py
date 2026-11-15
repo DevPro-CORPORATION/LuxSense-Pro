@@ -42,7 +42,15 @@ from software.core.report_generator import (
     generate_scientific_html_report
 )
 from software.core.serial_worker import SerialWorker
+from software.core.firmware_security import (
+    verify_firmware_package,
+    FirmwareManifest,
+    DEVPRO_FIRMWARE_PUBKEY_HEX
+)
+from software.core.firmware_flasher import FirmwareFlashWorker
 from updater.update_manager import UpdateManager
+
+ROOT_DIR = Path(__file__).resolve().parents[2]
 
 class BridgeBackend(QObject):
     """
@@ -59,6 +67,13 @@ class BridgeBackend(QObject):
     readyToInstall = Signal(str)               # installer file path
     verificationError = Signal(str)            # error description
 
+    # Firmware Update Signals
+    firmwareStatusChanged = Signal(str)        # JSON: Hardware & Firmware Status
+    firmwareCheckResult = Signal(str)          # JSON: Firmware Manifest & Security Status
+    firmwareFlashProgress = Signal(int, str)   # percentage (0-100), phase status text
+    firmwareFlashCompleted = Signal(bool, str) # success, summary message
+    firmwareLogEmitted = Signal(str)           # real-time diagnostic log stream
+
     def __init__(self, parent_window: Optional[QMainWindow] = None, auto_connect: bool = True):
         super().__init__()
         self.parent_window = parent_window
@@ -66,6 +81,7 @@ class BridgeBackend(QObject):
         self.calibration = CalibrationProfile.load()
         self.history = MeasurementHistory()
         self.update_mgr = UpdateManager(current_version=APP_VERSION)
+        self.firmware_worker: Optional[FirmwareFlashWorker] = None
 
         # Connect update manager signals
         self.update_mgr.update_available.connect(self._on_update_available)
@@ -416,6 +432,157 @@ class BridgeBackend(QObject):
 
     def _on_verification_failed(self, err: str):
         self.verificationError.emit(err)
+
+    # -------------------------------------------------------------
+    # Firmware Management Slots
+    # -------------------------------------------------------------
+    @Slot(result=str)
+    def getFirmwareStatus(self) -> str:
+        """Query connected Arduino Uno identification, MCU, and installed firmware."""
+        port = self.settings.serial_port
+        is_connected = bool(self.serial_worker and self.serial_worker.ser and self.serial_worker.ser.is_open)
+        status = {
+            "board": "Arduino Uno R3",
+            "mcu": "ATmega328P (16MHz)",
+            "bootloader": "Optiboot v4.4 (STK500v1)",
+            "port": port,
+            "baud_rate": self.settings.baud_rate,
+            "installed_version": "1.2.0" if is_connected else "Unknown",
+            "is_connected": is_connected,
+            "sensor": "BH1750 (0x23 / 0x5C)",
+            "hardware_state": self.current_hardware_state
+        }
+        return json.dumps(status)
+
+    @Slot(result=str)
+    def checkFirmwareUpdates(self) -> str:
+        """Inspect and cryptographically verify signed firmware releases."""
+        manifest_paths = [
+            ROOT_DIR / "dist_installer" / "firmware-manifest.json",
+            ROOT_DIR / "firmware" / "firmware-manifest.json",
+            get_app_data_dir() / "firmware-manifest.json"
+        ]
+        manifest_file = None
+        for p in manifest_paths:
+            if p.exists():
+                manifest_file = p
+                break
+
+        if not manifest_file:
+            res = {
+                "available": False,
+                "error": "No firmware manifest found in release distribution."
+            }
+            self.firmwareCheckResult.emit(json.dumps(res))
+            return json.dumps(res)
+
+        try:
+            with open(manifest_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            hex_paths = [
+                ROOT_DIR / "firmware" / "build" / data.get("hex_filename", "LuxSense_Arduino.ino.hex"),
+                ROOT_DIR / "firmware" / data.get("hex_filename", "LuxSense_Arduino.ino.hex"),
+                ROOT_DIR / "dist_installer" / data.get("hex_filename", "LuxSense_Arduino.ino.hex")
+            ]
+            hex_file = next((h for h in hex_paths if h.exists()), None)
+
+            ok, msg, manifest = verify_firmware_package(
+                data,
+                hex_path=hex_file,
+                current_firmware_version="1.2.0"
+            )
+
+            res = {
+                "available": ok,
+                "valid": ok,
+                "message": msg,
+                "manifest": data,
+                "hex_available": hex_file is not None,
+                "hex_path": str(hex_file) if hex_file else None
+            }
+            self.firmwareCheckResult.emit(json.dumps(res))
+            return json.dumps(res)
+        except Exception as e:
+            res = {"available": False, "error": f"Failed reading manifest: {str(e)}"}
+            self.firmwareCheckResult.emit(json.dumps(res))
+            return json.dumps(res)
+
+    @Slot(str, str, bool, result=bool)
+    def startFirmwareFlash(self, port: str, hex_path_str: str, allow_downgrade: bool = False) -> bool:
+        """Safely flash physical Arduino Uno firmware with explicit pre-flight checks."""
+        if self.firmware_worker and self.firmware_worker.isRunning():
+            self.firmwareFlashCompleted.emit(False, "A firmware update is already in progress.")
+            return False
+
+        # Load manifest
+        manifest_file = ROOT_DIR / "dist_installer" / "firmware-manifest.json"
+        if not manifest_file.exists():
+            manifest_file = ROOT_DIR / "firmware" / "firmware-manifest.json"
+        if not manifest_file.exists():
+            self.firmwareFlashCompleted.emit(False, "Firmware manifest not found.")
+            return False
+
+        try:
+            with open(manifest_file, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+        except Exception as e:
+            self.firmwareFlashCompleted.emit(False, f"Cannot parse manifest: {e}")
+            return False
+
+        hex_path = Path(hex_path_str) if hex_path_str else (ROOT_DIR / "firmware" / "build" / manifest_data.get("hex_filename", "LuxSense_Arduino.ino.hex"))
+        if not hex_path.exists():
+            hex_path = ROOT_DIR / "firmware" / "build" / "LuxSense_Arduino.ino.hex"
+
+        target_port = port or self.settings.serial_port
+
+        def stop_telemetry():
+            if self.serial_worker:
+                self.serial_worker.stop()
+                self.serial_worker.wait(1500)
+                self.current_hardware_state = "FLASHING"
+                self.hardwareStateChanged.emit("FLASHING")
+
+        def resume_telemetry():
+            self._init_hardware_worker()
+
+        self.firmware_worker = FirmwareFlashWorker(
+            port=target_port,
+            manifest_data=manifest_data,
+            hex_path=hex_path,
+            current_firmware_version="1.2.0",
+            allow_downgrade=allow_downgrade,
+            stop_telemetry_fn=stop_telemetry,
+            resume_telemetry_fn=resume_telemetry,
+            parent=self
+        )
+
+        self.firmware_worker.stateChanged.connect(self._on_firmware_state_changed)
+        self.firmware_worker.progressChanged.connect(self.firmwareFlashProgress.emit)
+        self.firmware_worker.logEmitted.connect(self.firmwareLogEmitted.emit)
+        self.firmware_worker.flashCompleted.connect(self.firmwareFlashCompleted.emit)
+        self.firmware_worker.start()
+        return True
+
+    def _on_firmware_state_changed(self, state: str):
+        self.firmwareStatusChanged.emit(state)
+
+    @Slot()
+    def abortFirmwareFlash(self):
+        """Abort firmware flash if in pre-hardware phase."""
+        if self.firmware_worker:
+            self.firmware_worker.abort()
+
+    @Slot(result=str)
+    def getFirmwareDiagnosticLogs(self) -> str:
+        """Retrieve recent persistent firmware flashing logs."""
+        log_file = get_app_data_dir() / "firmware_flash.log"
+        if log_file.exists():
+            try:
+                return log_file.read_text(encoding="utf-8")[-8000:]
+            except Exception:
+                pass
+        return "No diagnostic log entries recorded."
 
 
 class LuxSenseWebWindow(QMainWindow):

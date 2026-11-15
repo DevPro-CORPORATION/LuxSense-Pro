@@ -112,3 +112,18 @@ def test_bridge_scientific_features():
     latency = backend.getSerialLatency()
     assert latency >= 0.0
 
+def test_bridge_firmware_status_and_update_check():
+    backend = BridgeBackend()
+    fw_status_json = backend.getFirmwareStatus()
+    fw_status = json.loads(fw_status_json)
+    assert fw_status["board"] == "Arduino Uno R3"
+    assert "ATmega328P" in fw_status["mcu"]
+    assert "port" in fw_status
+
+    check_res_json = backend.checkFirmwareUpdates()
+    check_res = json.loads(check_res_json)
+    assert "available" in check_res
+    if check_res.get("available"):
+        assert check_res["valid"] is True
+        assert "manifest" in check_res
+
