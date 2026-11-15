@@ -84,3 +84,25 @@ Microcontroller hardware carries physical flash memory wear limits (typically 10
 **Policy:**
 - Application updates **never** flash or modify the connected microcontroller.
 - Firmware updates are distributed as documented Arduino sketches in the `firmware/` directory and can only be uploaded intentionally by the user via the Firmware Management interface.
+
+---
+
+## 6. Post-Update Changelog Experience
+
+To keep scientific operators informed of improvements and new metrological standards, LuxSense Pro features an automatic Post-Update Changelog Card:
+
+1. **Activation Trigger:** Evaluated dynamically during startup. If `is_newer_version(installed_version, last_acknowledged_version)` returns `True`, the modal card is presented.
+2. **Fresh Installation Suppression:** On a brand new installation where no settings file exists, the initial configuration sets `last_acknowledged_version = APP_VERSION`, suppressing the changelog.
+3. **Rollback Suppression:** If the application is rolled back to a previous version, `is_newer_version` returns `False`, preventing unwanted popups.
+4. **Permanent Dismissal:** Clicking "Got it / Close" invokes `bridge.acknowledgeUpdate(version)`, saving the acknowledgement to `%APPDATA%\DevPro\LuxSensePro\settings.json`.
+5. **Print & PDF Export:** The changelog modal includes dedicated `@media print` styling, allowing operators to print or export high-resolution release notes directly to PDF for lab compliance records.
+
+---
+
+## 7. Firmware Flashing 3-State Lifecycle & Hardware Verification
+
+The firmware flashing pipeline implements strict 3-state reporting:
+
+1. **`SUCCESS`:** The microcode was flashed, verified byte-for-byte in ATmega328P flash memory, and the post-flash serial probe confirmed active communication (`ID:GY30_LUX_PRO_2026`).
+2. **`WARNING`:** The microcode was flashed and verified byte-for-byte by `avrdude` in flash memory, but the post-flash handshake probe timed out. The microcontroller is running the new microcode; instructions prompt the operator to check the sensor wiring or press RESET.
+3. **`FAILED`:** An actual flashing error occurred (e.g. invalid signature, missing COM port, or programmer communication failure). Recovery instructions guide the operator on safe recovery.

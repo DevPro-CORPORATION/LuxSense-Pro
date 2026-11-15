@@ -48,8 +48,9 @@ def test_theme_settings_normalization():
     s_light = UserSettings(theme="light")
     assert s_light.theme == "light"
 
+    # Strictly 2-mode constraint for v2.3.1: "system" or legacy themes normalize to "dark"
     s_sys = UserSettings(theme="system")
-    assert s_sys.theme == "system"
+    assert s_sys.theme == "dark"
 
     # Invalid theme falls back to default "dark"
     s_invalid = UserSettings(theme="invalid_theme")

@@ -29,8 +29,8 @@ WizardStyle=modern
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 UninstallDisplayIcon={app}\{#MyAppExeName}
-CloseApplications=yes
-CloseApplicationsFilter=*.exe
+CloseApplications=force
+CloseApplicationsFilter=*.exe,LuxSensePro.exe,QtWebEngineProcess.exe
 RestartApplications=no
 
 [Languages]

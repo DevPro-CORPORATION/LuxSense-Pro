@@ -71,7 +71,7 @@ class BridgeBackend(QObject):
     firmwareStatusChanged = Signal(str)        # JSON: Hardware & Firmware Status
     firmwareCheckResult = Signal(str)          # JSON: Firmware Manifest & Security Status
     firmwareFlashProgress = Signal(int, str)   # percentage (0-100), phase status text
-    firmwareFlashCompleted = Signal(bool, str) # success, summary message
+    firmwareFlashCompleted = Signal(bool, str, str) # success, summary message, status_type ('SUCCESS' | 'WARNING' | 'FAILED')
     firmwareLogEmitted = Signal(str)           # real-time diagnostic log stream
 
     def __init__(self, parent_window: Optional[QMainWindow] = None, auto_connect: bool = True):
@@ -722,6 +722,10 @@ class LuxSenseWebWindow(QMainWindow):
 
         # Initialize WebEngine View
         self.browser = QWebEngineView(self)
+        try:
+            self.browser.page().profile().clearHttpCache()
+        except Exception:
+            pass
         layout.addWidget(self.browser)
 
         # Configure WebEngine Settings

@@ -67,13 +67,14 @@ def test_flasher_security_rejection_prevents_hardware_touch(valid_firmware):
         current_firmware_version="1.0.0"
     )
     worker.stateChanged.connect(lambda s: states.append(s))
-    worker.flashCompleted.connect(lambda success, msg: results.append((success, msg)))
+    worker.flashCompleted.connect(lambda success, msg, *args: results.append((success, msg, *args)))
 
     worker.run()
 
     assert "FAILED" in states
     assert len(results) == 1
     assert results[0][0] is False
+    assert results[0][2] == "FAILED"
     assert "security rejection" in results[0][1].lower()
 
 def test_flasher_unavailable_port_failure(valid_firmware):
@@ -94,7 +95,7 @@ def test_flasher_unavailable_port_failure(valid_firmware):
         resume_telemetry_fn=resume_fn
     )
     worker.stateChanged.connect(lambda s: states.append(s))
-    worker.flashCompleted.connect(lambda success, msg: results.append((success, msg)))
+    worker.flashCompleted.connect(lambda success, msg, *args: results.append((success, msg, *args)))
 
     worker.run()
 
@@ -104,6 +105,7 @@ def test_flasher_unavailable_port_failure(valid_firmware):
     assert resume_fn.called  # Ensured resume on failure
     assert len(results) == 1
     assert results[0][0] is False
+    assert results[0][2] == "FAILED"
     assert "unavailable" in results[0][1].lower()
 
 def test_flasher_user_abort_before_flash(valid_firmware):
@@ -116,12 +118,13 @@ def test_flasher_user_abort_before_flash(valid_firmware):
     )
     worker.abort()
     results = []
-    worker.flashCompleted.connect(lambda success, msg: results.append((success, msg)))
+    worker.flashCompleted.connect(lambda success, msg, *args: results.append((success, msg, *args)))
 
     worker.run()
 
     assert len(results) == 1
     assert results[0][0] is False
+    assert results[0][2] == "FAILED"
     assert "cancelled" in results[0][1].lower()
 
 def test_flasher_records_validation_phase_timing(valid_firmware):
@@ -173,7 +176,7 @@ def test_flasher_detects_sync_retries_and_warns(valid_firmware, monkeypatch):
     logs = []
     worker.logEmitted.connect(lambda l: logs.append(l))
     results = []
-    worker.flashCompleted.connect(lambda s, m: results.append((s, m)))
+    worker.flashCompleted.connect(lambda s, m, *args: results.append((s, m, *args)))
 
     worker.run()
 
@@ -181,3 +184,94 @@ def test_flasher_detects_sync_retries_and_warns(valid_firmware, monkeypatch):
     assert "flash_write_verify_s" in worker.phase_timings
     assert len(results) == 1
     assert results[0][0] is False
+    assert results[0][2] == "FAILED"
+
+def test_flasher_success_state_and_signal(valid_firmware, monkeypatch):
+    hex_path, manifest_data = valid_firmware
+
+    mock_ser = MagicMock()
+    mock_ser.is_open = True
+    # Return probe discovery on readline
+    mock_ser.readline.return_value = b"ID:GY30_LUX_PRO_2026:ADDR_0x23:READY\n"
+    monkeypatch.setattr("serial.Serial", lambda *args, **kwargs: mock_ser)
+    monkeypatch.setattr("software.core.firmware_flasher.find_avrdude", lambda: (Path("avrdude.exe"), Path("avrdude.conf")))
+    monkeypatch.setattr("time.sleep", lambda *args: None)
+
+    class MockSuccessProcess:
+        def __init__(self, *args, **kwargs):
+            import io
+            self.stdout = io.StringIO("Writing | ################################################## | 100%\nReading | ################################################## | 100%\navrdude done.  Thank you.\n")
+            self._exit = 0
+        def poll(self):
+            return 0
+        def wait(self):
+            return 0
+        def kill(self):
+            pass
+
+    monkeypatch.setattr("subprocess.Popen", MockSuccessProcess)
+
+    worker = FirmwareFlashWorker(
+        port="COM5",
+        manifest_data=manifest_data,
+        hex_path=hex_path,
+        current_firmware_version="1.0.0"
+    )
+
+    states = []
+    results = []
+    worker.stateChanged.connect(lambda s: states.append(s))
+    worker.flashCompleted.connect(lambda s, m, *args: results.append((s, m, *args)))
+
+    worker.run()
+
+    assert "SUCCESS" in states
+    assert len(results) == 1
+    assert results[0][0] is True
+    assert results[0][2] == "SUCCESS"
+    assert "successfully updated" in results[0][1].lower()
+
+def test_flasher_warning_on_post_flash_probe_timeout(valid_firmware, monkeypatch):
+    hex_path, manifest_data = valid_firmware
+
+    mock_ser = MagicMock()
+    mock_ser.is_open = True
+    # Return empty on readline so probe times out
+    mock_ser.readline.return_value = b""
+    monkeypatch.setattr("serial.Serial", lambda *args, **kwargs: mock_ser)
+    monkeypatch.setattr("software.core.firmware_flasher.find_avrdude", lambda: (Path("avrdude.exe"), Path("avrdude.conf")))
+    monkeypatch.setattr("time.sleep", lambda *args: None)
+
+    class MockSuccessProcess:
+        def __init__(self, *args, **kwargs):
+            import io
+            self.stdout = io.StringIO("Writing | ################################################## | 100%\nReading | ################################################## | 100%\navrdude done.  Thank you.\n")
+            self._exit = 0
+        def poll(self):
+            return 0
+        def wait(self):
+            return 0
+        def kill(self):
+            pass
+
+    monkeypatch.setattr("subprocess.Popen", MockSuccessProcess)
+
+    worker = FirmwareFlashWorker(
+        port="COM5",
+        manifest_data=manifest_data,
+        hex_path=hex_path,
+        current_firmware_version="1.0.0"
+    )
+
+    states = []
+    results = []
+    worker.stateChanged.connect(lambda s: states.append(s))
+    worker.flashCompleted.connect(lambda s, m, *args: results.append((s, m, *args)))
+
+    worker.run()
+
+    assert "WARNING" in states
+    assert len(results) == 1
+    assert results[0][0] is True
+    assert results[0][2] == "WARNING"
+    assert "device detection warning" in results[0][1].lower()

@@ -60,7 +60,7 @@ type VerificationErrorListener = (err: string) => void;
 type FirmwareStatusListener = (status: any) => void;
 type FirmwareCheckListener = (result: any) => void;
 type FirmwareProgressListener = (percent: number, phase: string) => void;
-type FirmwareCompletedListener = (success: boolean, message: string) => void;
+type FirmwareCompletedListener = (success: boolean, message: string, statusType?: string) => void;
 type FirmwareLogListener = (line: string) => void;
 
 class BridgeClient {
@@ -187,8 +187,9 @@ class BridgeClient {
     }
 
     if (this.backendObj.firmwareFlashCompleted) {
-      this.backendObj.firmwareFlashCompleted.connect((success: boolean, msg: string) => {
-        this.firmwareCompletedListeners.forEach(fn => fn(success, msg));
+      this.backendObj.firmwareFlashCompleted.connect((success: boolean, msg: string, statusType?: string) => {
+        const finalStatus = statusType || (success ? 'SUCCESS' : 'FAILED');
+        this.firmwareCompletedListeners.forEach(fn => fn(success, msg, finalStatus));
       });
     }
 

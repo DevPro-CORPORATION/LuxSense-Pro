@@ -27,8 +27,14 @@ export const App: React.FC = () => {
   const [calibration, setCalibration] = useState<CalibrationProfile | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
   const [pendingChangelog, setPendingChangelog] = useState<ChangelogData | null>(null);
+  const [appVersion, setAppVersion] = useState<string>('2.3.1');
 
   useEffect(() => {
+    // Dynamic version retrieval from installed binary
+    bridge.getAppVersion().then((v) => {
+      if (v) setAppVersion(v);
+    }).catch(console.error);
+
     // Check if an update was recently installed and needs changelog acknowledgement
     bridge.checkPendingChangelog().then((res) => {
       if (res && res.show) {
@@ -115,6 +121,7 @@ export const App: React.FC = () => {
           statusColor={statusColor}
           hardwareState={hardwareState}
           isConnected={isConnected}
+          appVersion={appVersion}
         />
 
         <div className="flex flex-1 h-[calc(100vh-3rem)] overflow-hidden">

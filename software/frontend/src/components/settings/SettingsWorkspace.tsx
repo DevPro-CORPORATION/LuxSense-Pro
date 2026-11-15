@@ -69,7 +69,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
   const [firmwareCheckResult, setFirmwareCheckResult] = useState<any>(null);
   const [firmwareProgress, setFirmwareProgress] = useState<{ percent: number; phase: string } | null>(null);
   const [firmwareLogs, setFirmwareLogs] = useState<string[]>([]);
-  const [firmwareResult, setFirmwareResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [firmwareResult, setFirmwareResult] = useState<{ status: 'SUCCESS' | 'WARNING' | 'FAILED'; message: string } | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
   const [userConfirmedRisk, setUserConfirmedRisk] = useState(false);
   const [allowDowngrade, setAllowDowngrade] = useState(false);
@@ -139,9 +139,12 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
       setIsFlashing(true);
     });
 
-    const unsubFwDone = bridge.onFirmwareFlashCompleted((success, msg) => {
+    const unsubFwDone = bridge.onFirmwareFlashCompleted((success, msg, statusType) => {
       setIsFlashing(false);
-      setFirmwareResult({ success, message: msg });
+      const status = (statusType === 'SUCCESS' || statusType === 'WARNING' || statusType === 'FAILED')
+        ? statusType
+        : (success ? 'SUCCESS' : 'FAILED');
+      setFirmwareResult({ status: status as 'SUCCESS' | 'WARNING' | 'FAILED', message: msg });
       loadFirmwareStatus();
     });
 
@@ -245,7 +248,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
       await bridge.startFirmwareFlash(settings.serial_port, hexPath, allowDowngrade, selectedBoard);
     } catch (e: any) {
       setIsFlashing(false);
-      setFirmwareResult({ success: false, message: `Invocation error: ${e?.message || e}` });
+      setFirmwareResult({ status: 'FAILED', message: `Invocation error: ${e?.message || e}` });
     }
   };
 
@@ -557,6 +560,53 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
                     ))}
                   </select>
                 </div>
+              </div>
+            </div>
+
+            {/* Accessible Appearance & Visual Theme Section */}
+            <div className="bg-chassis-950 border border-border rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-border pb-2">
+                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+                  <Palette className="w-3.5 h-3.5 text-metrology-amber" />
+                  <span>Appearance &amp; Visual Theme</span>
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-chassis-850 border border-border text-metrology-green font-bold">
+                  {theme.toUpperCase()} MODE
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTheme('dark')}
+                  className={`p-2.5 rounded-lg border text-left font-mono transition-all flex items-center space-x-2 ${
+                    theme === 'dark'
+                      ? 'bg-chassis-900 border-metrology-green text-white shadow-glow-green'
+                      : 'bg-chassis-950 border-border text-zinc-400 hover:text-white hover:border-border-focus'
+                  }`}
+                >
+                  <Moon className="w-4 h-4 text-metrology-green shrink-0" />
+                  <div>
+                    <div className="text-xs font-bold">Dark (Default)</div>
+                    <div className="text-[10px] text-zinc-400">Carbon Chassis</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTheme('light')}
+                  className={`p-2.5 rounded-lg border text-left font-mono transition-all flex items-center space-x-2 ${
+                    theme === 'light'
+                      ? 'bg-white border-metrology-green text-slate-900 shadow-glow-green'
+                      : 'bg-chassis-950 border-border text-zinc-400 hover:text-white hover:border-border-focus'
+                  }`}
+                >
+                  <Sun className="w-4 h-4 text-amber-500 shrink-0" />
+                  <div>
+                    <div className="text-xs font-bold text-zinc-200">Light Mode</div>
+                    <div className="text-[10px] text-zinc-400">Daylight Paper</div>
+                  </div>
+                </button>
               </div>
             </div>
 
@@ -891,21 +941,34 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
               </div>
             )}
 
-            {/* Success or Error Result Notification */}
+            {/* Success, Warning, or Error Result Notification */}
             {firmwareResult && (
-              <div className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
-                firmwareResult.success
+              <div className={`p-3.5 rounded-lg border text-xs flex items-center justify-between ${
+                firmwareResult.status === 'SUCCESS'
                   ? 'bg-metrology-green/15 border-metrology-green text-metrology-green'
+                  : firmwareResult.status === 'WARNING'
+                  ? 'bg-amber-500/15 border-amber-500 text-amber-400'
                   : 'bg-metrology-crimson/15 border-metrology-crimson text-metrology-crimson'
               }`}>
-                <div className="flex items-center space-x-2">
-                  {firmwareResult.success ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                  <span>{firmwareResult.message}</span>
+                <div className="flex items-start space-x-2.5">
+                  {firmwareResult.status === 'SUCCESS' && <CheckCircle2 className="w-5 h-5 text-metrology-green shrink-0 mt-0.5" />}
+                  {firmwareResult.status === 'WARNING' && <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />}
+                  {firmwareResult.status === 'FAILED' && <AlertCircle className="w-5 h-5 text-metrology-crimson shrink-0 mt-0.5" />}
+                  <div>
+                    <div className="font-bold text-xs uppercase tracking-wide">
+                      {firmwareResult.status === 'SUCCESS' && 'Firmware Update Successful'}
+                      {firmwareResult.status === 'WARNING' && 'Firmware Written — Hardware Warning'}
+                      {firmwareResult.status === 'FAILED' && 'Firmware Flashing Failed'}
+                    </div>
+                    <div className="mt-0.5 text-[11px] font-mono leading-relaxed opacity-95">
+                      {firmwareResult.message}
+                    </div>
+                  </div>
                 </div>
-                {!firmwareResult.success && (
+                {firmwareResult.status === 'FAILED' && (
                   <button
                     onClick={() => setShowRecoveryModal(true)}
-                    className="px-2 py-0.5 rounded bg-metrology-crimson/20 border border-metrology-crimson/40 hover:bg-metrology-crimson/30 text-[10px]"
+                    className="px-2.5 py-1 rounded bg-metrology-crimson/20 border border-metrology-crimson/40 hover:bg-metrology-crimson/30 text-[10px] font-bold shrink-0 ml-3 uppercase"
                   >
                     VIEW RECOVERY STEPS
                   </button>
@@ -958,9 +1021,10 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
               charts, calibration tools, dialogs, and diagnostic terminals.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
               {/* Card 1: Dark Mode */}
               <button
+                type="button"
                 onClick={() => setTheme('dark')}
                 className={`p-4 rounded-xl border text-left transition-all font-mono space-y-3 relative group ${
                   theme === 'dark'
@@ -979,7 +1043,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
                 <div>
                   <h3 className="text-xs font-bold text-white">Graphite Dark (Default)</h3>
                   <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
-                    Deep matte carbon chassis with vivid optical neon accents. Ideal for low-ambient optical laboratory calibration.
+                    Deep matte carbon chassis with vivid optical neon accents. Ideal for cleanrooms, darkrooms, and low-ambient metrology.
                   </p>
                 </div>
                 {/* Visual Swatch */}
@@ -994,6 +1058,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
 
               {/* Card 2: Light Mode */}
               <button
+                type="button"
                 onClick={() => setTheme('light')}
                 className={`p-4 rounded-xl border text-left transition-all font-mono space-y-3 relative group ${
                   theme === 'light'
@@ -1022,34 +1087,6 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
                   <div className="w-5 h-5 rounded bg-[#E2E8F0] border border-slate-300" title="Panel Slate" />
                   <div className="w-5 h-5 rounded bg-[#21D789]" title="Photopic Green" />
                   <div className="w-5 h-5 rounded bg-[#0F172A]" title="Slate Text" />
-                </div>
-              </button>
-
-              {/* Card 3: System Default */}
-              <button
-                onClick={() => setTheme('system')}
-                className={`p-4 rounded-xl border text-left transition-all font-mono space-y-3 relative group ${
-                  theme === 'system'
-                    ? 'bg-chassis-900 border-metrology-green shadow-glow-green'
-                    : 'bg-chassis-950 border-border hover:border-border-focus hover:bg-chassis-900/60'
-                }`}
-              >
-                {theme === 'system' && (
-                  <div className="absolute top-3 right-3 text-metrology-green">
-                    <CheckCircle className="w-4 h-4" />
-                  </div>
-                )}
-                <div className="w-9 h-9 rounded-lg bg-chassis-900 border border-border flex items-center justify-center text-metrology-blue">
-                  <Monitor className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">System Synchronized</h3>
-                  <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
-                    Dynamically mirrors your Windows 10 / 11 personalization setting. Seamlessly adapts when Windows switches modes.
-                  </p>
-                </div>
-                <div className="text-[10px] font-mono text-metrology-blue bg-chassis-900 px-2 py-1 rounded border border-border inline-block">
-                  Current Windows State: {resolvedTheme.toUpperCase()}
                 </div>
               </button>
             </div>

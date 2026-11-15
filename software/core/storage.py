@@ -59,12 +59,12 @@ class UserSettings:
     latest_known_version: str = APP_VERSION
     postponed_version: Optional[str] = None
     telemetry_logging: bool = True
-    theme: str = "dark"                  # "dark", "light", or "system"
+    theme: str = "dark"                  # "dark" (default) or "light"
     last_acknowledged_version: Optional[str] = None
     previous_version: Optional[str] = None
 
     def __post_init__(self):
-        if self.theme not in ("dark", "light", "system"):
+        if self.theme not in ("dark", "light"):
             self.theme = "dark"
 
     def should_show_changelog(self) -> bool:
@@ -89,14 +89,19 @@ class UserSettings:
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                # Normalize legacy theme names
-                if data.get("theme") in ("graphite_dark", "night"):
+                # Normalize legacy theme names to strictly 2 modes: dark (default) or light
+                if data.get("theme") in ("graphite_dark", "night", "system"):
                     data["theme"] = "dark"
-                elif data.get("theme") not in ("dark", "light", "system"):
+                elif data.get("theme") not in ("dark", "light"):
                     data["theme"] = "dark"
 
                 # Check version progression
                 stored_ack = data.get("last_acknowledged_version")
+                if not stored_ack:
+                    # If upgrading from an older installation that did not track last_acknowledged_version
+                    stored_ack = data.get("latest_known_version") or "2.3.0"
+                    data["last_acknowledged_version"] = stored_ack
+
                 prev = None
                 if stored_ack and is_newer_version(APP_VERSION, stored_ack):
                     prev = stored_ack

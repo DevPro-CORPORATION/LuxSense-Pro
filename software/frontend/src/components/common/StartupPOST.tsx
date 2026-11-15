@@ -19,7 +19,7 @@ export const StartupPOST: React.FC<StartupPOSTProps> = ({ onComplete }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [progressPercent, setProgressPercent] = useState<number>(5);
   const [logs, setLogs] = useState<string[]>([]);
-  const [appVersion, setAppVersion] = useState<string>('2.3.1');
+  const [appVersion, setAppVersion] = useState<string>('');
   const [hasTimeoutWarning, setHasTimeoutWarning] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<SVGSVGElement>(null);

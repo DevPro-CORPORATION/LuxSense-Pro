@@ -9,8 +9,7 @@ import {
   ShieldCheck, 
   Layers,
   Sun,
-  Moon,
-  Monitor
+  Moon
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -19,6 +18,7 @@ interface HeaderProps {
   statusColor: string;
   hardwareState?: string;
   isConnected: boolean;
+  appVersion?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,9 +26,10 @@ export const Header: React.FC<HeaderProps> = ({
   statusMessage,
   statusColor,
   hardwareState = 'CONNECTING',
-  isConnected
+  isConnected,
+  appVersion = '2.3.1'
 }) => {
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [clock, setClock] = useState<string>('');
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center space-x-2">
             <span className="font-bold text-xs tracking-wider text-white uppercase">LuxSense Pro</span>
             <span className="text-[10px] px-1.5 py-0.2 bg-chassis-750 text-metrology-green border border-metrology-green/30 rounded font-mono font-semibold">
-              v2.3.1
+              v{appVersion}
             </span>
           </div>
           <span className="text-[10px] text-zinc-400 tracking-tight font-mono">
@@ -116,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right Controls, Appearance Toggle & Clock */}
       <div className="flex items-center space-x-3">
-        {/* Global Appearance Toggle: Light / Dark / System */}
+        {/* Global Appearance Toggle: Light / Dark */}
         <div 
           className="flex items-center bg-chassis-900 border border-border rounded p-0.5" 
           role="group" 
@@ -147,19 +148,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Moon className="w-3.5 h-3.5" />
             <span className="sr-only">Dark</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setTheme('system')}
-            title={`System Sync (OS Theme: ${resolvedTheme.toUpperCase()})`}
-            className={`p-1 rounded transition-colors flex items-center justify-center ${
-              theme === 'system'
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            <span className="sr-only">System</span>
           </button>
         </div>
 

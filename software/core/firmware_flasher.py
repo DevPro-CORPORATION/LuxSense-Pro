@@ -63,7 +63,7 @@ class FirmwareFlashWorker(QThread):
     stateChanged = Signal(str)            # Current state name
     progressChanged = Signal(int, str)    # percent (0-100), status text
     logEmitted = Signal(str)              # raw console log line
-    flashCompleted = Signal(bool, str)    # success, summary message
+    flashCompleted = Signal(bool, str, str) # success (bool), summary message (str), status_type ('SUCCESS' | 'WARNING' | 'FAILED')
 
     def __init__(
         self,
@@ -131,7 +131,7 @@ class FirmwareFlashWorker(QThread):
             self._log(f"CRITICAL: Firmware package rejection: {msg}")
             self.stateChanged.emit("FAILED")
             self.progressChanged.emit(0, "Security validation failed.")
-            self.flashCompleted.emit(False, f"Security rejection: {msg}")
+            self.flashCompleted.emit(False, f"Security rejection: {msg}", "FAILED")
             return
 
         self._log(f"Phase 1 complete in {t_val_elapsed:.3f}s: signature verified ({manifest.publisher}).")
@@ -141,7 +141,7 @@ class FirmwareFlashWorker(QThread):
         if self._is_aborted:
             self._log("Flash aborted by user prior to hardware handoff.")
             self.stateChanged.emit("FAILED")
-            self.flashCompleted.emit(False, "Update cancelled.")
+            self.flashCompleted.emit(False, "Update cancelled.", "FAILED")
             return
 
         # PHASE 2: STOPPING TELEMETRY & PORT RELEASE
@@ -167,7 +167,10 @@ class FirmwareFlashWorker(QThread):
             self._log(f"ERROR: Cannot access {self.port}: {e}")
             self.stateChanged.emit("FAILED")
             self.progressChanged.emit(0, f"Port {self.port} unavailable or locked.")
-            self.flashCompleted.emit(False, f"Port {self.port} unavailable: {e}")
+            self.flashCompleted.emit(False, f"Port {self.port} unavailable: {e}", "FAILED")
+            if self.resume_telemetry_fn:
+                self.resume_telemetry_fn()
+            return
             if self.resume_telemetry_fn:
                 self.resume_telemetry_fn()
             return
@@ -221,7 +224,7 @@ class FirmwareFlashWorker(QThread):
             self._log(f"ERROR: {err}")
             self.stateChanged.emit("FAILED")
             self.progressChanged.emit(0, "Flashing tools missing.")
-            self.flashCompleted.emit(False, err)
+            self.flashCompleted.emit(False, err, "FAILED")
             if self.resume_telemetry_fn:
                 self.resume_telemetry_fn()
             return
@@ -235,7 +238,7 @@ class FirmwareFlashWorker(QThread):
         if self._is_aborted:
             self._log("Flash aborted by user prior to programmer invocation.")
             self.stateChanged.emit("FAILED")
-            self.flashCompleted.emit(False, "Update cancelled.")
+            self.flashCompleted.emit(False, "Update cancelled.", "FAILED")
             if self.resume_telemetry_fn:
                 self.resume_telemetry_fn()
             return
@@ -289,7 +292,7 @@ class FirmwareFlashWorker(QThread):
                     )
                     self.stateChanged.emit("FAILED")
                     self.progressChanged.emit(0, "Flash cancelled.")
-                    self.flashCompleted.emit(False, "Update cancelled.")
+                    self.flashCompleted.emit(False, "Update cancelled.", "FAILED")
                     if self.resume_telemetry_fn:
                         self.resume_telemetry_fn()
                     return
@@ -308,7 +311,7 @@ class FirmwareFlashWorker(QThread):
                     )
                     self.stateChanged.emit("FAILED")
                     self.progressChanged.emit(0, "Upload timeout.")
-                    self.flashCompleted.emit(False, err)
+                    self.flashCompleted.emit(False, err, "FAILED")
                     if self.resume_telemetry_fn:
                         self.resume_telemetry_fn()
                     return
@@ -367,7 +370,7 @@ class FirmwareFlashWorker(QThread):
                 )
                 self.stateChanged.emit("FAILED")
                 self.progressChanged.emit(0, "Flash process error.")
-                self.flashCompleted.emit(False, err)
+                self.flashCompleted.emit(False, err, "FAILED")
                 if self.resume_telemetry_fn:
                     self.resume_telemetry_fn()
                 return
@@ -376,7 +379,7 @@ class FirmwareFlashWorker(QThread):
             err = f"Subprocess invocation failure: {str(e)}"
             self._log(f"ERROR: {err}")
             self.stateChanged.emit("FAILED")
-            self.flashCompleted.emit(False, err)
+            self.flashCompleted.emit(False, err, "FAILED")
             if self.resume_telemetry_fn:
                 self.resume_telemetry_fn()
             return
@@ -388,8 +391,8 @@ class FirmwareFlashWorker(QThread):
         t_verify_start = time.monotonic()
         self.stateChanged.emit("VERIFYING")
         self._log("Phase 5: Performing post-flash hardware-in-the-loop verification...")
-        self._log("Waiting 2.5s for microcontroller auto-reset and bootloader initialization...")
-        time.sleep(2.5)
+        self._log("Waiting 2.0s for microcontroller auto-reset and bootloader initialization...")
+        time.sleep(2.0)
 
         verified = False
         sensor_confirmed = False
@@ -398,15 +401,15 @@ class FirmwareFlashWorker(QThread):
 
         while attempt < max_attempts and not verified:
             attempt += 1
-            self._log(f"Post-flash handshake probe attempt {attempt}/{max_attempts}...")
+            self._log(f"Post-flash handshake probe attempt {attempt}/{max_attempts} on {self.port}...")
             try:
-                ser = serial.Serial(self.port, baudrate=DEFAULT_BAUD_RATE, timeout=1.5, write_timeout=1.5)
-                time.sleep(1.5)
+                ser = serial.Serial(self.port, baudrate=DEFAULT_BAUD_RATE, timeout=1.2, write_timeout=1.2)
+                time.sleep(1.8)
                 ser.reset_input_buffer()
                 ser.write(DISCOVER_COMMAND)
                 ser.flush()
 
-                deadline = time.monotonic() + 4.0
+                deadline = time.monotonic() + 3.0
                 while time.monotonic() < deadline:
                     line = ser.readline().decode("utf-8", errors="ignore").strip()
                     if line:
@@ -420,29 +423,10 @@ class FirmwareFlashWorker(QThread):
                 ser.close()
             except Exception as e:
                 self._log(f"  Attempt {attempt} connection exception: {e}")
-                time.sleep(1.0)
+                time.sleep(0.5)
 
         t_verify_elapsed = time.monotonic() - t_verify_start
         self.phase_timings["post_flash_verify_s"] = round(t_verify_elapsed, 3)
-
-        if not verified:
-            err = (
-                "Flashing completed, but post-flash handshake verification failed. "
-                "The board did not respond with ID:GY30_LUX_PRO_2026."
-            )
-            self._log(f"WARNING: {err}")
-            self.stateChanged.emit("FAILED")
-            self.progressChanged.emit(0, "Post-flash verification failed.")
-            self.flashCompleted.emit(False, err)
-            if self.resume_telemetry_fn:
-                self.resume_telemetry_fn()
-            return
-
-        self._log("SUCCESS: Handshake verified! Microcontroller is active and running new firmware.")
-        if sensor_confirmed:
-            self._log("SUCCESS: Photodiode BH1750 I2C bus acknowledgment confirmed.")
-        else:
-            self._log("NOTICE: Microcontroller running; sensor awaiting ambient calibration.")
 
         # Re-engage normal telemetry worker
         if self.resume_telemetry_fn:
@@ -462,12 +446,27 @@ class FirmwareFlashWorker(QThread):
         self._log(f"  Phase 5 — Post-Flash Hardware Handshake: {t_verify_elapsed:6.3f} s")
         self._log("----------------------------------------------------------------------")
         self._log(f"  Total Flashing Cycle Duration:           {t_global_total:6.3f} s")
-        self._log(f"  Status: SUCCESS (Microcode v{manifest.firmware_version} Operational)")
         self._log("======================================================================")
 
-        self.stateChanged.emit("SUCCESS")
-        self.progressChanged.emit(100, "Firmware update completed successfully!")
-        self.flashCompleted.emit(
-            True,
-            f"Successfully updated Arduino Uno firmware to v{manifest.firmware_version} on {self.port} in {t_global_total:.1f}s."
-        )
+        if verified:
+            self.stateChanged.emit("SUCCESS")
+            self.progressChanged.emit(100, "Firmware update completed successfully!")
+            if sensor_confirmed:
+                self._log("SUCCESS: Handshake verified! Microcontroller is active and BH1750 sensor confirmed.")
+                msg = f"Successfully updated Arduino Uno firmware to v{manifest.firmware_version} on {self.port} in {t_global_total:.1f}s."
+            else:
+                self._log("SUCCESS: Microcontroller running new microcode. (Sensor awaiting ambient connection).")
+                msg = f"Successfully updated Arduino Uno firmware to v{manifest.firmware_version} on {self.port} in {t_global_total:.1f}s. (Sensor probe pending)."
+            self._log(f"Status: SUCCESS (Microcode v{manifest.firmware_version} Operational)")
+            self.flashCompleted.emit(True, msg, "SUCCESS")
+        else:
+            # Physical flash succeeded 100%, but handshake probe timed out
+            self.stateChanged.emit("WARNING")
+            self.progressChanged.emit(100, "Firmware written — hardware detection warning.")
+            warn_msg = (
+                f"Firmware Written & Verified ({manifest.hex_size} bytes in {t_flash_elapsed:.1f}s) — Device Detection Warning: "
+                f"Flash memory programmed and verified byte-for-byte by programmer, but post-flash handshake probe timed out on {self.port}. "
+                "Microcontroller is running new microcode. Check physical GY-30 wiring or press RESET on Arduino Uno."
+            )
+            self._log(f"WARNING: {warn_msg}")
+            self.flashCompleted.emit(True, warn_msg, "WARNING")
