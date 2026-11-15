@@ -16,6 +16,8 @@ jobs:
   verify-and-test:
     name: Run Automated Tests & Firmware Compilation Verification
     runs-on: windows-latest
+    env:
+      PYTHONPATH: .
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -44,6 +46,8 @@ jobs:
     name: Build Binaries, Windows Installer & Publish GitHub Release
     needs: verify-and-test
     runs-on: windows-latest
+    env:
+      PYTHONPATH: .
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

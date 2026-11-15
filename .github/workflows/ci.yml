@@ -10,6 +10,8 @@ jobs:
   test:
     name: Run Automated Test Suite & Metrology Verification
     runs-on: windows-latest
+    env:
+      PYTHONPATH: .
 
     steps:
       - name: Checkout Code
