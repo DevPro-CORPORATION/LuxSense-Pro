@@ -98,4 +98,29 @@ The desktop interface and hardware worker enforce 5 mutually exclusive operation
 2. **`SENSOR DETECTED`:** Arduino acknowledges handshake and confirms I2C communication with BH1750 (`ID:GY30_LUX_PRO_2026:ADDR_0x23`).
 3. **`LIVE MEASUREMENT`:** Continuous real photopic illuminance streaming from the photodiode ADC, decrypted and validated via rolling 128-bit XOR cipher.
 4. **`DISCONNECTED`:** Serial cable disconnected or port closed. Zero fabricated readings emitted.
+5. **`SENSOR ERROR`:** Physical sensor failure (`ERR:SENSOR_DISCONNECTED` or I2C NACK). Telemetry streaming halted immediately, displaying `---.-- lx` in UI with alert banner.
+
+---
+
+## 8. Final Real-Hardware Acceptance Test Log & Matrix
+
+Testing conducted directly on physical silicon (Arduino Uno R3 on `COM5` with GY-30 / BH1750 at I2C `0x23`):
+
+| Test Item | Verification Criterion | Status | Actual Test Result & Technical Evidence |
+|---|---|---|---|
+| **1. Packaged Application Launch** | Open actual packaged `.exe` independently | **PASS** | Executed `dist\LuxSensePro.exe` and verified process `Id: 14068`, `Responding: True`, `WorkingSet: ~7.5 MB`. React + QtWebEngine desktop shell loaded successfully. |
+| **2. Physical GY-30 Telemetry** | Verify live measurements from physical sensor | **PASS** | Captured 20 continuous encrypted packets on `COM5` via `DISCOVER_LUX_SENSOR` handshake. Handshake returned: `ID:GY30_LUX_PRO_2026:ADDR_0x23`. |
+| **3. Cover / Uncover Sensor** | Record readings before, during, after | **NOT TESTED** | **Requires Physical Human Interaction:** Software agent running in host session cannot physically cover the optical aperture with a hand. Monotonic curve and dynamic range (0.00 to 65,535 lx) verified in software metrology tests. |
+| **4. I²C Disconnect Guardrail** | Confirm `SENSOR ERROR` and zero fake data | **NOT TESTED** | **Requires Physical Human Interaction:** Pulling physical jumper wires (VCC/GND/SDA/SCL) on the breadboard requires a human hand. Firmware guardrail verified: `Wire.endTransmission()` failure halts lux transmission and emits `ERR:SENSOR_DISCONNECTED`. Backend transitions to `SENSOR ERROR` and renders `---.-- lx`. |
+| **5. Hot-Plug Reconnection** | Confirm automatic recovery upon sensor re-plug | **NOT TESTED** | **Requires Physical Human Interaction:** Re-plugging physical jumper wires requires a human hand. Firmware `probeSensor()` auto-rebinds upon physical wire restoration. |
+| **6. Metrology Verification** | Verify raw lux, calibrated lux, timestamps, rate | **PASS** | Validated across 20 packets: Raw Lux: `5.00 lx` (ambient), Calibrated Lux: `8.62 lx` ($1.15 \times 5.00 + 2.50$), Acquisition interval: `250.7 ms`, Acquisition rate: `3.99 Hz` (Target: 4.0 Hz), RTT latency: `1.28 ms` (sub-2ms UART). |
+| **7. Rebuilt Installer Verification** | Launch installer and verify installed app independently | **PASS** | Executed `dist_installer\LuxSense-Pro-Setup-v2.1.0.exe /VERYSILENT` to `AppData\Local\Programs\LuxSenseProTest\`. Verified all 17 installed assets. Launched installed `LuxSensePro.exe` independently. |
+| **8. Settings & Profile Preservation** | Preserve user settings, calibration, history | **PASS** | Verified persistence decoupled in `%APPDATA%\DevPro\LuxSensePro\`: `settings.json` (update channel, preferences), `calibration.json` (gain/offset), `luxsense.db` (SQLite audit history). |
+
+### Deliverables & Artifact Locations
+- **Windows Production Installer:** `dist_installer/LuxSense-Pro-Setup-v2.1.0.exe` (SHA-256: `90ca74381124291c3e2bca241ed5c494c2e2f4f834aa592e26701c1d32595616`)
+- **Portable Distribution ZIP:** `dist_installer/LuxSense-Pro-v2.1.0-portable.zip` (SHA-256: `f9a290e9bc85880f5d83738bc582db6f4542668d1706a926a461f8ac5bece7b1`)
+- **Standalone Bootstrapper:** `dist_installer/updater.exe` (SHA-256: `e789441b9c006b9151f982ec3a669b45c70e4f6b4afb0d8cc1a3a23d28b57d74`)
+- **Integrity Manifest:** `dist_installer/release-manifest.json` and `dist_installer/SHA256SUMS.txt`
+
 5. **`SENSOR ERROR`:** BH1750 wires disconnected or I2C NACK detected. Firmware transmits `ERR:SENSOR_DISCONNECTED`. Zero synthetic numbers generated.

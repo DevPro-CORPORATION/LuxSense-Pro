@@ -8,11 +8,15 @@ import sys
 import json
 import time
 import os
+from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 import serial.tools.list_ports
-from PySide6.QtCore import QObject, Signal, Slot, QTimer
-from PySide6.QtWidgets import QMainWindow, QApplication
+from PySide6.QtCore import QObject, Signal, Slot, QTimer, QUrl, Qt
+from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEngineSettings
+from PySide6.QtWebChannel import QWebChannel
 
 from software.core.config import (
     APP_NAME,
@@ -411,3 +415,78 @@ class BridgeBackend(QObject):
 
     def _on_verification_failed(self, err: str):
         self.verificationError.emit(err)
+
+
+class LuxSenseWebWindow(QMainWindow):
+    """
+    Main desktop window embedding Qt WebEngine and connecting to the React interface.
+    """
+    def __init__(self, dev_mode: bool = False):
+        super().__init__()
+        self.setWindowTitle(f"LuxSense Pro v{APP_VERSION} — Optical Radiometry Workstation")
+        self.setMinimumSize(1120, 740)
+        self.resize(1280, 840)
+
+        # Set dark palette styling
+        self.setStyleSheet("background-color: #07080A; color: #DFE2E8;")
+
+        # Central container
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Initialize WebEngine View
+        self.browser = QWebEngineView(self)
+        layout.addWidget(self.browser)
+
+        # Configure WebEngine Settings
+        settings = self.browser.settings()
+        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.ScrollAnimatorEnabled, True)
+
+        # Setup Qt WebChannel
+        self.channel = QWebChannel(self.browser.page())
+        self.backend = BridgeBackend(parent_window=self)
+        self.channel.registerObject("backend", self.backend)
+        self.browser.page().setWebChannel(self.channel)
+
+        # Determine target URL
+        if dev_mode and os.environ.get("VITE_DEV_SERVER"):
+            target_url = QUrl(os.environ.get("VITE_DEV_SERVER"))
+        else:
+            if getattr(sys, 'frozen', False):
+                base_dir = Path(getattr(sys, '_MEIPASS', Path(sys.executable).parent))
+            else:
+                base_dir = Path(__file__).resolve().parents[1]
+            dist_index = base_dir / "frontend" / "dist" / "index.html"
+            if not dist_index.exists():
+                dist_index = base_dir / "software" / "frontend" / "dist" / "index.html"
+            if not dist_index.exists():
+                dist_index = Path.cwd() / "software" / "frontend" / "dist" / "index.html"
+            target_url = QUrl.fromLocalFile(str(dist_index.resolve()))
+
+        print(f"[WebEngineHost] Loading interface: {target_url.toString()}")
+        self.browser.setUrl(target_url)
+
+
+def run_desktop_app():
+    """Launch the LuxSense Pro desktop application."""
+    app = QApplication(sys.argv)
+    app.setApplicationName("LuxSense Pro")
+    app.setOrganizationName("DevPro Corporation")
+    app.setOrganizationDomain("devpro-corp.github.io")
+
+    dev_mode = "--dev" in sys.argv or bool(os.environ.get("VITE_DEV_SERVER"))
+    window = LuxSenseWebWindow(dev_mode=dev_mode)
+    window.show()
+
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(run_desktop_app())
