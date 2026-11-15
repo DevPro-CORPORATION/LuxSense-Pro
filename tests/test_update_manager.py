@@ -10,7 +10,7 @@ from software.core.config import APP_VERSION
 def test_semver_comparisons():
     current = parse_version(APP_VERSION)
     newer = parse_version("2.4.0")
-    patch = parse_version("2.3.3")
+    patch = parse_version("2.3.4")
     older = parse_version("2.2.0")
 
     assert newer > current

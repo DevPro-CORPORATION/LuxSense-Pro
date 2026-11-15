@@ -3,6 +3,19 @@
 All notable changes to LuxSense Pro are documented in this file.
 Version formatting follows [Semantic Versioning](https://semver.org/).
 
+## [2.3.3] - 2026-11-15
+
+### Added
+- **Real-Time Flashing Subprocess Streaming Console:** Rewrote programmer subprocess output reader to stream live `avrdude` output instantly, decoding in-place carriage returns (`\r`) and newlines (`\n`) for real-time progress bar rendering (`Writing | ### | 100%`).
+- **Interactive Flashing Diagnostic Console:** Added live elapsed timer (`00:05.4s`), target MCU and COM port badges (`Uno (COM5)`), current phase status (`Phase 4: Flashing`), "Copy Log" to clipboard, and "Save Log" file download buttons.
+- **Accurate 3-State Completion Reporting:** Enforced distinct `SUCCESS`, `WARNING` (firmware written but post-flash handshake pending), and `FAILED` notification states with actionable recovery steps and persistent diagnostic logging.
+
+### Fixed
+- **Post-Flashing Application Freeze Elimination:** Resolved multi-threaded PySerial contention where `getSerialLatency()` was executing `measure_latency_ms()` synchronously on the Qt main GUI thread every 4 seconds. Latency is now exclusively measured inside `SerialWorker`'s background loop and cached for zero-latency retrieval.
+- **Thread Affinity & Port Handle Cycling:** Decoupled `FirmwareFlashWorker` from telemetry re-engagement. `SerialWorker` is now cleanly re-instantiated on the Qt main GUI thread with a 1200ms Windows USB-CDC kernel driver settling delay.
+- **Safe Process Shutdown:** Updated `terminate_stale_processes()` in `updater/bootstrapper.py` to target strictly the application PID tree (`taskkill /PID <wait_pid> /T /F`), explicitly eliminating blind `taskkill /IM QtWebEngineProcess.exe` to protect unrelated system applications.
+- **Detached Application Relaunch:** Resolved application relaunch failure by implementing `launch_application()` using Windows `os.startfile` (`ShellExecuteW`) with explicit working directory (`cwd=target_dir`), with fallback to detached `subprocess.Popen` with `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP`.
+
 ## [2.3.2] - 2026-11-15
 
 ### Added

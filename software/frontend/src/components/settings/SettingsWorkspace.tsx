@@ -23,7 +23,11 @@ import {
   Sun,
   Moon,
   Monitor,
-  Palette
+  Palette,
+  Copy,
+  Download,
+  Check,
+  Clock
 } from 'lucide-react';
 
 interface SettingsWorkspaceProps {
@@ -76,7 +80,49 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [selectedBoard, setSelectedBoard] = useState<string>('uno');
   const [selectedFirmwareVer, setSelectedFirmwareVer] = useState<string>('2.0.0');
+  const [flashElapsed, setFlashElapsed] = useState<number>(0);
+  const flashTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [copiedLogs, setCopiedLogs] = useState(false);
   const consoleEndRef = useRef<HTMLDivElement>(null);
+
+  // Live timer for firmware flashing elapsed duration
+  useEffect(() => {
+    if (isFlashing) {
+      setFlashElapsed(0);
+      const startTime = Date.now();
+      flashTimerRef.current = setInterval(() => {
+        setFlashElapsed(Math.floor((Date.now() - startTime) / 100) / 10);
+      }, 100);
+    } else {
+      if (flashTimerRef.current) {
+        clearInterval(flashTimerRef.current);
+        flashTimerRef.current = null;
+      }
+    }
+    return () => {
+      if (flashTimerRef.current) {
+        clearInterval(flashTimerRef.current);
+      }
+    };
+  }, [isFlashing]);
+
+  const handleCopyLogs = () => {
+    if (firmwareLogs.length === 0) return;
+    navigator.clipboard.writeText(firmwareLogs.join('\n'));
+    setCopiedLogs(true);
+    setTimeout(() => setCopiedLogs(false), 2000);
+  };
+
+  const handleDownloadLogs = () => {
+    if (firmwareLogs.length === 0) return;
+    const blob = new Blob([firmwareLogs.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `luxsense_firmware_flash_${new Date().toISOString().replace(/[:.]/g, '-')}.log`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Load initial settings & firmware status
   useEffect(() => {
@@ -916,25 +962,70 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
           </div>
 
           {/* Diagnostic Console & Live Progress Section */}
-          <div className="bg-chassis-950 border border-border rounded-xl p-4 space-y-3 font-mono">
-            <div className="flex items-center justify-between border-b border-border pb-2">
-              <div className="flex items-center space-x-2 text-xs font-bold text-white uppercase tracking-wider">
-                <Terminal className="w-3.5 h-3.5 text-metrology-green" />
-                <span>Microcontroller Flashing Diagnostic Console</span>
-              </div>
-              {firmwareProgress && (
-                <span className="text-[11px] text-metrology-green font-bold">
-                  {firmwareProgress.percent}% — {firmwareProgress.phase}
+          <div className="bg-chassis-950 border border-border rounded-xl p-4 space-y-3 font-mono shadow-instrument">
+            {/* Console Toolbar Header */}
+            <div className="flex flex-wrap items-center justify-between border-b border-border pb-2.5 gap-2">
+              <div className="flex items-center space-x-2">
+                <Terminal className="w-4 h-4 text-metrology-green" />
+                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  Microcontroller Flashing Console
                 </span>
-              )}
+                <span className="px-2 py-0.5 rounded bg-chassis-900 border border-border text-[10px] text-zinc-300">
+                  Target: {selectedBoard === 'nano' ? 'Nano' : 'Uno'} ({settings.serial_port})
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-2 text-xs">
+                {/* Elapsed Timer Counter */}
+                <div className="flex items-center space-x-1 px-2 py-1 rounded bg-chassis-900 border border-border text-[11px] text-zinc-300">
+                  <Clock className="w-3.5 h-3.5 text-metrology-amber" />
+                  <span>Elapsed: <strong>{flashElapsed.toFixed(1)}s</strong></span>
+                </div>
+
+                {firmwareProgress && (
+                  <span className="text-[11px] text-metrology-green font-bold px-2 py-1 rounded bg-metrology-green/10 border border-metrology-green/30">
+                    {firmwareProgress.percent}% — {firmwareProgress.phase}
+                  </span>
+                )}
+
+                {/* Console Action Buttons */}
+                <button
+                  type="button"
+                  onClick={handleCopyLogs}
+                  disabled={firmwareLogs.length === 0}
+                  className="flex items-center space-x-1 px-2.5 py-1 rounded bg-chassis-850 border border-border text-[10px] text-zinc-300 hover:text-white hover:border-border-focus transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Copy diagnostic logs to clipboard"
+                >
+                  {copiedLogs ? <Check className="w-3 h-3 text-metrology-green" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedLogs ? 'COPIED' : 'COPY LOG'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadLogs}
+                  disabled={firmwareLogs.length === 0}
+                  className="flex items-center space-x-1 px-2.5 py-1 rounded bg-chassis-850 border border-border text-[10px] text-zinc-300 hover:text-white hover:border-border-focus transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Save diagnostic log file"
+                >
+                  <Download className="w-3 h-3" />
+                  <span>SAVE LOG</span>
+                </button>
+              </div>
             </div>
 
-            {/* Progress Bar */}
+            {/* Progress Bar with Phase Details */}
             {isFlashing && (
-              <div className="space-y-1">
-                <div className="h-2 w-full bg-chassis-800 rounded-full overflow-hidden">
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between text-[11px] text-zinc-400">
+                  <span className="text-metrology-blue flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-metrology-green animate-ping inline-block" />
+                    <span>Active: {firmwareProgress?.phase || 'Programming ATmega328P Flash...'}</span>
+                  </span>
+                  <span className="font-bold text-white">{firmwareProgress?.percent || 5}%</span>
+                </div>
+                <div className="h-2.5 w-full bg-chassis-900 border border-border/80 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-metrology-green transition-[width] duration-150 ease-out will-change-[width]"
+                    className="h-full bg-gradient-to-r from-metrology-green to-emerald-400 transition-[width] duration-150 ease-out will-change-[width]"
                     style={{ width: `${Math.max(5, Math.min(100, firmwareProgress?.percent || 5))}%` }}
                   />
                 </div>
@@ -957,7 +1048,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
                   <div>
                     <div className="font-bold text-xs uppercase tracking-wide">
                       {firmwareResult.status === 'SUCCESS' && 'Firmware Update Successful'}
-                      {firmwareResult.status === 'WARNING' && 'Firmware Written — Hardware Warning'}
+                      {firmwareResult.status === 'WARNING' && 'Firmware Written — Hardware Detection Warning'}
                       {firmwareResult.status === 'FAILED' && 'Firmware Flashing Failed'}
                     </div>
                     <div className="mt-0.5 text-[11px] font-mono leading-relaxed opacity-95">
@@ -977,16 +1068,31 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
             )}
 
             {/* Real-time stdout/stderr console */}
-            <div className="h-44 bg-chassis-900 border border-border rounded-lg p-3 text-[11px] text-zinc-300 font-mono overflow-y-auto space-y-1 leading-relaxed">
+            <div className="h-48 bg-chassis-900 border border-border rounded-lg p-3 text-[11px] text-zinc-300 font-mono overflow-y-auto space-y-1 leading-relaxed select-text">
               {firmwareLogs.length > 0 ? (
-                firmwareLogs.map((line, idx) => (
-                  <div key={idx} className="flex items-start space-x-2">
-                    <span className="text-zinc-600 select-none">&gt;</span>
-                    <span className={line.includes('ERROR') ? 'text-metrology-crimson font-bold' : line.includes('SUCCESS') ? 'text-metrology-green font-bold' : ''}>
-                      {line}
-                    </span>
-                  </div>
-                ))
+                firmwareLogs.map((line, idx) => {
+                  let colorClass = 'text-zinc-300';
+                  if (line.includes('ERROR') || line.includes('CRITICAL')) {
+                    colorClass = 'text-metrology-crimson font-bold';
+                  } else if (line.includes('SUCCESS') || line.includes('verified!')) {
+                    colorClass = 'text-metrology-green font-bold';
+                  } else if (line.includes('WARNING') || line.includes('RECOVERY')) {
+                    colorClass = 'text-metrology-amber font-semibold';
+                  } else if (line.includes('Writing') || line.includes('Reading')) {
+                    colorClass = 'text-metrology-blue';
+                  } else if (line.includes('USER ACTION') || line.includes('SECURITY')) {
+                    colorClass = 'text-purple-400';
+                  }
+
+                  return (
+                    <div key={idx} className="flex items-start space-x-2">
+                      <span className="text-zinc-600 select-none">&gt;</span>
+                      <span className={colorClass}>
+                        {line}
+                      </span>
+                    </div>
+                  );
+                })
               ) : (
                 <div className="text-zinc-500 italic">
                   Awaiting flashing operation. Real-time stdout/stderr stream from avrdude and hardware verification will be captured here.

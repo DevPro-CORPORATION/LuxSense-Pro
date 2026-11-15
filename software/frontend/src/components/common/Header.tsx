@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   statusColor,
   hardwareState = 'CONNECTING',
   isConnected,
-  appVersion = '2.3.2',
+  appVersion = '2.3.3',
   deviceStatus
 }) => {
   const { theme, setTheme } = useTheme();

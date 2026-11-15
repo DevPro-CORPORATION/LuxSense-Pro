@@ -397,9 +397,9 @@ class BridgeBackend(QObject):
 
     @Slot(result=float)
     def getSerialLatency(self) -> float:
-        """Return serial round-trip communication latency in milliseconds."""
+        """Return cached serial round-trip communication latency in milliseconds without blocking GUI thread."""
         if self.serial_worker and self.serial_worker.isRunning():
-            return self.serial_worker.measure_latency_ms()
+            return getattr(self.serial_worker, "last_measured_latency_ms", 0.0)
         return 0.0
 
     # -------------------------------------------------------------
@@ -525,41 +525,41 @@ class BridgeBackend(QObject):
         Returns JSON with show: bool, previous_version, current_version, and release notes.
         """
         should_show = self.settings.should_show_changelog()
-        prev = self.settings.previous_version or "2.3.1"
+        prev = self.settings.previous_version or "2.3.2"
 
         info = {
             "show": should_show,
             "previous_version": prev,
             "current_version": APP_VERSION,
             "release_date": "2026-11-15",
-            "release_name": f"LuxSense Pro v{APP_VERSION} — Production Reliability, UI/UX Stabilization & Premium Update Experience",
-            "summary": "LuxSense Pro has been updated to v2.3.2 with dedicated JetBrains-style update experience, independent Arduino and GY-30 sensor health monitoring, 3-state firmware flashing notifications, and stabilized progress animations.",
+            "release_name": f"LuxSense Pro v{APP_VERSION} — Critical Hardware & Update Lifecycle Repair",
+            "summary": f"LuxSense Pro has been updated to v{APP_VERSION} with real-time avrdude streaming console, thread synchronization fixes eliminating post-flashing freezes, and reliable detached updater application relaunch.",
             "categories": [
                 {
-                    "title": "Firmware Flashing & Hardware Isolation",
-                    "badge": "HARDWARE",
+                    "title": "Real-Time Flashing Console & Delimiter Handling",
+                    "badge": "FIRMWARE",
                     "items": [
-                        "Reliable 3-state reporting: SUCCESS, WARNING (device detection), and FAILED with interactive recovery steps",
-                        "Decoupled Arduino board connection tracking from GY-30 / BH1750 I2C sensor health",
-                        "Continuous sensor hot-plug detection without serial port reset or UI flickering"
+                        "Real-time non-blocking subprocess streaming supporting both \\r and \\n delimiters",
+                        "Live elapsed timer, write/verify progress badges, and diagnostic log copy/save capabilities",
+                        "Accurate 3-state completion reporting (SUCCESS, WARNING, FAILED) with persistent logging"
                     ]
                 },
                 {
-                    "title": "Premium Update Architecture",
-                    "badge": "UPDATER",
-                    "items": [
-                        "Dedicated native Windows Update Manager window inspired by JetBrains / PyCharm IDE updates",
-                        "Real-time step-by-step progress tracking: package validation, shutdown, safety backup, file replacement, and relaunch",
-                        "Elapsed time counter, non-flickering progress bars, and automatic rollback on failure"
-                    ]
-                },
-                {
-                    "title": "UI/UX Stability & Metrology Polish",
+                    "title": "Thread Synchronization & Telemetry Stability",
                     "badge": "STABILITY",
                     "items": [
-                        "Smooth, stabilized progress indicators with non-decrementing monotonicity guards",
-                        "Eliminated unnecessary component remounting and animation restarts during 4.0 Hz telemetry",
-                        "Dedicated floating notification toasts for all system, firmware, and update events"
+                        "Eliminated post-flashing UI freezes by offloading serial latency measurements from Qt main thread",
+                        "Clean main-thread SerialWorker re-initialization with 1200ms Windows COM settle guard",
+                        "Guaranteed non-blocking PySerial operations across prolonged radiometry sessions"
+                    ]
+                },
+                {
+                    "title": "Safe Process Shutdown & Detached Update Relaunch",
+                    "badge": "UPDATER",
+                    "items": [
+                        "Targeted PID-tree process termination protecting unrelated system processes",
+                        "Detached application relaunch via native Windows ShellExecute with verified working directory",
+                        "Automatic rollback safeguards preserving user data in %APPDATA% on installation error"
                     ]
                 }
             ]
@@ -677,15 +677,14 @@ class BridgeBackend(QObject):
 
         target_port = port or self.settings.serial_port
 
-        def stop_telemetry():
-            if self.serial_worker:
-                self.serial_worker.stop()
-                self.serial_worker.wait(1500)
-                self.current_hardware_state = "FLASHING"
-                self.hardwareStateChanged.emit("FLASHING")
-
-        def resume_telemetry():
-            self._init_hardware_worker()
+        # Cleanly stop and release serial worker on the main GUI thread before flashing begins
+        if self.serial_worker:
+            self.serial_worker.stop()
+            self.serial_worker.wait(1500)
+            self.serial_worker = None
+        self.current_hardware_state = "FLASHING"
+        self.hardwareStateChanged.emit("FLASHING")
+        self.statusChanged.emit(f"FLASHING — Programming firmware to {target_port}...", "#61AFEF")
 
         self.firmware_worker = FirmwareFlashWorker(
             port=target_port,
@@ -694,8 +693,8 @@ class BridgeBackend(QObject):
             current_firmware_version="1.2.0",
             allow_downgrade=allow_downgrade,
             board_type=board,
-            stop_telemetry_fn=stop_telemetry,
-            resume_telemetry_fn=resume_telemetry,
+            stop_telemetry_fn=None,
+            resume_telemetry_fn=None,
             parent=self
         )
 
@@ -715,6 +714,16 @@ class BridgeBackend(QObject):
             else "Firmware Flash Failed")
         )
         self.appNotification.emit(notif_type, notif_title, message)
+
+        if self.firmware_worker:
+            self.firmware_worker.wait(1000)
+
+        # Allow Windows USB-CDC kernel driver 1200ms to cleanly cycle before resuming telemetry
+        QTimer.singleShot(1200, self._resume_telemetry_after_flash)
+
+    def _resume_telemetry_after_flash(self):
+        """Safely re-instantiate and start SerialWorker on the Qt main GUI thread."""
+        self._init_hardware_worker()
 
     def _on_firmware_state_changed(self, state: str):
         self.firmwareStatusChanged.emit(state)

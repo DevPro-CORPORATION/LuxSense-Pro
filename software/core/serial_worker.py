@@ -42,6 +42,7 @@ class SerialWorker(QThread):
         self.last_latency_check = 0.0
         self.last_sensor_probe = 0.0
         self.current_state = "DISCONNECTED"
+        self.last_measured_latency_ms: float = 0.0
 
     def update_config(self, port: str, baud: int):
         if self.port != port or self.baud != baud:
@@ -216,6 +217,7 @@ class SerialWorker(QThread):
                     self.last_latency_check = now
                     rtt = self.measure_latency_ms()
                     if rtt > 0:
+                        self.last_measured_latency_ms = rtt
                         self.latency_signal.emit(rtt)
 
             except (serial.SerialException, OSError, RuntimeError) as error:

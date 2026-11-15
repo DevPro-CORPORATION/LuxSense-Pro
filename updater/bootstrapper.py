@@ -50,23 +50,69 @@ def wait_for_process_exit(pid: int, timeout_sec: int = 15) -> bool:
     logging.warning(f"Process {pid} did not exit within {timeout_sec}s.")
     return False
 
-def terminate_stale_processes(target_dir: Path):
-    """Forcefully terminates any lingering LuxSense Pro or QtWebEngine instances to release file locks."""
-    if sys.platform == "win32":
+def terminate_stale_processes(wait_pid: int = 0):
+    """
+    Safely terminates only the specific parent application PID and its immediate child processes.
+    Strictly avoids global taskkill by shared image names (e.g. QtWebEngineProcess.exe) to prevent
+    terminating unrelated applications across the system.
+    """
+    if wait_pid > 0 and sys.platform == "win32":
         try:
+            logging.info(f"Terminating application PID {wait_pid} and child process tree...")
             subprocess.run(
-                ["taskkill", "/F", "/IM", "LuxSensePro.exe", "/T"],
-                capture_output=True,
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
-            subprocess.run(
-                ["taskkill", "/F", "/IM", "QtWebEngineProcess.exe", "/T"],
+                ["taskkill", "/F", "/PID", str(wait_pid), "/T"],
                 capture_output=True,
                 creationflags=subprocess.CREATE_NO_WINDOW
             )
         except Exception as e:
             logging.warning(f"Note during process cleanup: {e}")
-        time.sleep(1.0)
+        time.sleep(0.5)
+
+def launch_application(target_exe: Path) -> bool:
+    """
+    Relaunches the updated application independently using ShellExecute or detached process flags.
+    Ensures correct working directory (cwd=target_dir) and detaches from updater lifetime.
+    """
+    if not target_exe.exists() or target_exe.stat().st_size < 10000:
+        logging.error(f"Cannot relaunch application: binary missing or invalid at {target_exe}")
+        return False
+
+    target_dir = target_exe.parent
+    logging.info(f"Relaunching application binary: {target_exe} (cwd={target_dir})")
+
+    # Strategy 1: Native Windows ShellExecuteW via os.startfile (fully detached from updater)
+    if sys.platform == "win32" and hasattr(os, "startfile"):
+        try:
+            old_cwd = os.getcwd()
+            try:
+                os.chdir(str(target_dir))
+                os.startfile(str(target_exe))
+            finally:
+                os.chdir(old_cwd)
+            logging.info("Application successfully launched via os.startfile.")
+            return True
+        except Exception as e:
+            logging.warning(f"os.startfile launch failed: {e}. Falling back to detached subprocess...")
+
+    # Strategy 2: Detached subprocess with explicit working directory
+    try:
+        creation_flags = 0
+        if sys.platform == "win32":
+            DETACHED_PROCESS = 0x00000008
+            CREATE_NEW_PROCESS_GROUP = 0x00000200
+            creation_flags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+
+        proc = subprocess.Popen(
+            [str(target_exe)],
+            cwd=str(target_dir),
+            creationflags=creation_flags,
+            close_fds=True
+        )
+        logging.info(f"Application successfully launched via subprocess.Popen (PID={proc.pid})")
+        return True
+    except Exception as e:
+        logging.critical(f"FATAL: Failed to relaunch application: {e}")
+        return False
 
 def ensure_file_unlocked(file_path: Path, timeout_sec: int = 6) -> bool:
     """Ensure target executable is writable and not locked by Windows file sharing."""
@@ -186,9 +232,9 @@ if HAS_PYSIDE6:
                 self.progressChanged.emit(20)
                 if self.wait_pid > 0:
                     wait_for_process_exit(self.wait_pid, timeout_sec=8)
-                terminate_stale_processes(self.target_dir)
+                terminate_stale_processes(self.wait_pid)
                 if not ensure_file_unlocked(self.target_exe, timeout_sec=4):
-                    terminate_stale_processes(self.target_dir)
+                    terminate_stale_processes(self.wait_pid)
                 self.progressChanged.emit(28)
                 time.sleep(0.3)
 
@@ -262,7 +308,9 @@ if HAS_PYSIDE6:
                     pass
 
                 logging.info(f"Relaunching updated application: {self.target_exe}")
-                subprocess.Popen([str(self.target_exe)])
+                relaunch_ok = launch_application(self.target_exe)
+                if not relaunch_ok:
+                    raise RuntimeError(f"Application relaunch failed for {self.target_exe}")
                 time.sleep(0.8)
                 self.finished.emit(True, "Update installed and application relaunched successfully.")
 
@@ -271,7 +319,7 @@ if HAS_PYSIDE6:
                 if backup_dir and backup_dir.exists():
                     rollback(backup_dir, self.target_dir)
                     if self.target_exe.exists():
-                        subprocess.Popen([str(self.target_exe)])
+                        launch_application(self.target_exe)
                 self.finished.emit(False, f"Update failed: {str(e)}. Previous version was safely restored.")
 
     class UpdateProgressWindow(QWidget):
@@ -509,10 +557,10 @@ def run_headless_sync(installer_path: Path, target_exe: Path, wait_pid: int = 0,
     if wait_pid > 0:
         wait_for_process_exit(wait_pid, timeout_sec=8)
 
-    terminate_stale_processes(target_dir)
+    terminate_stale_processes(wait_pid)
 
     if not ensure_file_unlocked(target_exe):
-        terminate_stale_processes(target_dir)
+        terminate_stale_processes(wait_pid)
 
     backup_dir = None
     if target_dir.exists() and any(target_dir.iterdir()):
@@ -529,7 +577,7 @@ def run_headless_sync(installer_path: Path, target_exe: Path, wait_pid: int = 0,
         if backup_dir and backup_dir.exists():
             rollback(backup_dir, target_dir)
             if target_exe.exists():
-                subprocess.Popen([str(target_exe)])
+                launch_application(target_exe)
         return exit_code or 1
 
     default_inno_path = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "DevPro" / "LuxSense Pro" / "LuxSensePro.exe"
@@ -552,8 +600,8 @@ def run_headless_sync(installer_path: Path, target_exe: Path, wait_pid: int = 0,
         pass
 
     logging.info(f"Relaunching updated application: {target_exe}")
-    subprocess.Popen([str(target_exe)])
-    return 0
+    relaunch_ok = launch_application(target_exe)
+    return 0 if relaunch_ok else 1
 
 def main():
     parser = argparse.ArgumentParser(description="LuxSense Pro Dedicated Native Update Manager")

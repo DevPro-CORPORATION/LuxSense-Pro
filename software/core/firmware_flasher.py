@@ -254,18 +254,50 @@ class FirmwareFlashWorker(QThread):
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
+                text=False,
+                bufsize=0,
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             )
 
-            # Threaded non-blocking line reader to prevent Windows pipe deadlock
+            # Threaded non-blocking line reader handling both \r and \n output delimiters
             line_queue: queue.Queue = queue.Queue()
 
             def _reader():
+                str_buf = []
+                byte_buf = bytearray()
                 try:
-                    for l in iter(process.stdout.readline, ''):
-                        line_queue.put(l)
+                    while True:
+                        chunk = process.stdout.read(32)
+                        if not chunk:
+                            break
+                        if isinstance(chunk, str):
+                            for ch in chunk:
+                                if ch in ('\r', '\n'):
+                                    if str_buf:
+                                        t = "".join(str_buf).strip()
+                                        if t:
+                                            line_queue.put(t)
+                                        str_buf.clear()
+                                else:
+                                    str_buf.append(ch)
+                        else:
+                            for b in chunk:
+                                if b in (10, 13):
+                                    if byte_buf:
+                                        t = byte_buf.decode("utf-8", errors="replace").strip()
+                                        if t:
+                                            line_queue.put(t)
+                                        byte_buf.clear()
+                                else:
+                                    byte_buf.append(b)
+                    if str_buf:
+                        t = "".join(str_buf).strip()
+                        if t:
+                            line_queue.put(t)
+                    if byte_buf:
+                        t = byte_buf.decode("utf-8", errors="replace").strip()
+                        if t:
+                            line_queue.put(t)
                 except Exception:
                     pass
                 finally:
@@ -317,7 +349,7 @@ class FirmwareFlashWorker(QThread):
                     return
 
                 try:
-                    line = line_queue.get(timeout=0.1)
+                    line = line_queue.get(timeout=0.04)
                     line_clean = line.strip()
                     if line_clean:
                         self._log(f"  {line_clean}")
@@ -347,12 +379,20 @@ class FirmwareFlashWorker(QThread):
 
                 except queue.Empty:
                     if process.poll() is not None:
+                        reader_thread.join(timeout=0.5)
                         # Drain any remaining lines in queue
                         while not line_queue.empty():
                             try:
                                 rem = line_queue.get_nowait().strip()
                                 if rem:
                                     self._log(f"  {rem}")
+                                    if "stk500_getsync()" in rem or "programmer is not responding" in rem:
+                                        if not sync_retry_detected:
+                                            sync_retry_detected = True
+                                            self._log(
+                                                "DIAGNOSTIC WARNING: Bootloader sync retry detected. "
+                                                "DTR auto-reset may have stalled or COM port is busy."
+                                            )
                             except queue.Empty:
                                 break
                         break

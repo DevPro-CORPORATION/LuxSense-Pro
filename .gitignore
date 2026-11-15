@@ -40,6 +40,7 @@ private_keys/
 dist/
 dist_installer/*.exe
 dist_installer/*.zip
+dist_installer/*.hex
 tools/arduino-cli/
 scratch/
 

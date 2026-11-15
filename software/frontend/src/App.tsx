@@ -30,7 +30,7 @@ export const App: React.FC = () => {
   const [calibration, setCalibration] = useState<CalibrationProfile | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
   const [pendingChangelog, setPendingChangelog] = useState<ChangelogData | null>(null);
-  const [appVersion, setAppVersion] = useState<string>('2.3.2');
+  const [appVersion, setAppVersion] = useState<string>('2.3.3');
 
   const addNotification = useCallback((notif: Omit<ToastNotification, 'id'>) => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2, 7);

@@ -230,34 +230,34 @@ def test_lifecycle_7_upgrade_v230_to_v231_and_changelog_card(mock_release_manife
 
     shutil.rmtree(temp_dir, ignore_errors=True)
 
-def test_lifecycle_8_upgrade_v231_to_v232_native_updater_window(mock_release_manifest):
+def test_lifecycle_8_upgrade_v232_to_v233_native_updater_window(mock_release_manifest):
     """
     Mandatory Real-World Upgrade Test:
-    Simulate installed LuxSense Pro v2.3.1 upgrading to v2.3.2.
+    Simulate installed LuxSense Pro v2.3.2 upgrading to v2.3.3.
     Verify:
-    1. Update detection identifies v2.3.2 as an upgrade over v2.3.1.
+    1. Update detection identifies v2.3.3 as an upgrade over v2.3.2.
     2. User data (settings, COM port, baud rate, theme, calibration) in AppData is preserved.
-    3. Post-Update Changelog Card triggers on first launch of v2.3.2.
+    3. Post-Update Changelog Card triggers on first launch of v2.3.3.
     4. Acknowledging dismisses the card and prevents re-triggering.
     """
-    temp_dir = Path(tempfile.mkdtemp(prefix="luxsense_upgrade_v232_"))
+    temp_dir = Path(tempfile.mkdtemp(prefix="luxsense_upgrade_v233_"))
     app_dir = temp_dir / "Programs" / "DevPro" / "LuxSense Pro"
     app_dir.mkdir(parents=True, exist_ok=True)
     exe_path = app_dir / "LuxSensePro.exe"
-    exe_path.write_bytes(b"LUXSENSE_PRO_v2.3.1_PRODUCTION_BINARY")
+    exe_path.write_bytes(b"LUXSENSE_PRO_v2.3.2_PRODUCTION_BINARY")
 
     appdata_dir = temp_dir / "AppData" / "Roaming" / "DevPro" / "LuxSensePro"
     appdata_dir.mkdir(parents=True, exist_ok=True)
     settings_file = appdata_dir / "settings.json"
     cal_file = appdata_dir / "calibration.json"
 
-    # Seed v2.3.1 user data
+    # Seed v2.3.2 user data
     settings_file.write_text(json.dumps({
         "serial_port": "COM5",
         "baud_rate": 115200,
         "update_channel": "stable",
         "theme": "dark",
-        "last_acknowledged_version": "2.3.1"
+        "last_acknowledged_version": "2.3.2"
     }), encoding="utf-8")
 
     cal_file.write_text(json.dumps({
@@ -268,15 +268,15 @@ def test_lifecycle_8_upgrade_v231_to_v232_native_updater_window(mock_release_man
     }), encoding="utf-8")
 
     # 1. Update Detection
-    installed_ver = parse_version("2.3.1")
-    published_ver = parse_version("2.3.2")
+    installed_ver = parse_version("2.3.2")
+    published_ver = parse_version("2.3.3")
     assert published_ver > installed_ver
 
     # 2. Updater replaces binary
     backup_dir = create_backup(app_dir)
-    exe_path.write_bytes(b"LUXSENSE_PRO_v2.3.2_PRODUCTION_BINARY")
+    exe_path.write_bytes(b"LUXSENSE_PRO_v2.3.3_PRODUCTION_BINARY")
     shutil.rmtree(backup_dir, ignore_errors=True)
-    assert exe_path.read_bytes() == b"LUXSENSE_PRO_v2.3.2_PRODUCTION_BINARY"
+    assert exe_path.read_bytes() == b"LUXSENSE_PRO_v2.3.3_PRODUCTION_BINARY"
 
     # 3. Post-Update Verification with Storage
     from unittest.mock import patch
@@ -285,9 +285,9 @@ def test_lifecycle_8_upgrade_v231_to_v232_native_updater_window(mock_release_man
         assert loaded_settings.serial_port == "COM5"
         assert loaded_settings.baud_rate == 115200
         assert loaded_settings.theme == "dark"
-        assert loaded_settings.last_acknowledged_version == "2.3.1"
-        assert loaded_settings.previous_version == "2.3.1"
-        # Must show changelog on first launch of 2.3.2
+        assert loaded_settings.last_acknowledged_version == "2.3.2"
+        assert loaded_settings.previous_version == "2.3.2"
+        # Must show changelog on first launch of 2.3.3
         assert loaded_settings.should_show_changelog() is True
 
         # Calibration preservation
@@ -297,12 +297,12 @@ def test_lifecycle_8_upgrade_v231_to_v232_native_updater_window(mock_release_man
         assert loaded_cal.gain_multiplier == 1.015
 
         # 4. User acknowledges changelog
-        loaded_settings.acknowledge_version("2.3.2")
+        loaded_settings.acknowledge_version("2.3.3")
         assert loaded_settings.should_show_changelog() is False
 
         # 5. Subsequent launch suppresses changelog
         reloaded = UserSettings.load()
-        assert reloaded.last_acknowledged_version == "2.3.2"
+        assert reloaded.last_acknowledged_version == "2.3.3"
         assert reloaded.should_show_changelog() is False
 
     shutil.rmtree(temp_dir, ignore_errors=True)

@@ -338,7 +338,7 @@ class UpdateManager(QObject):
         self.staged_installer_path = installer_path
         self.ready_to_install.emit(installer_path)
 
-    def launch_installer(self, installer_path: Optional[Any] = None, silent: bool = False, theme: str = "dark", new_version: str = "2.3.2"):
+    def launch_installer(self, installer_path: Optional[Any] = None, silent: bool = False, theme: str = "dark", new_version: str = "2.3.3"):
         """Executes dedicated native updater bootstrapper and terminates current LuxSense Pro instance."""
         target_path = installer_path or self.staged_installer_path
         if not target_path:
@@ -359,6 +359,10 @@ class UpdateManager(QObject):
 
         current_pid = os.getpid()
         current_exe = sys.executable
+        if not getattr(sys, 'frozen', False):
+            candidate_exe = app_dir / "dist" / "LuxSensePro.exe"
+            if candidate_exe.exists():
+                current_exe = str(candidate_exe)
 
         # Resolve active user theme from storage
         try:
@@ -366,6 +370,10 @@ class UpdateManager(QObject):
             active_theme = UserSettings.load().theme or theme
         except Exception:
             active_theme = theme
+
+        target_ver = new_version
+        if self.current_release_data and self.current_release_data.get("tag_name"):
+            target_ver = self.current_release_data.get("tag_name", "").lstrip("v")
 
         if bootstrapper.exists():
             args = [
@@ -375,7 +383,7 @@ class UpdateManager(QObject):
                 "--wait-pid", str(current_pid),
                 "--theme", active_theme,
                 "--old-version", self.current_version,
-                "--new-version", new_version
+                "--new-version", target_ver
             ]
             if silent:
                 args.append("--silent")
