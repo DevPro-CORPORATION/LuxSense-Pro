@@ -30,7 +30,7 @@ def sample_firmware_hex(tmp_path):
     return hex_file
 
 @pytest.fixture
-def signed_manifest_and_key(sample_firmware_hex, tmp_path):
+def signed_manifest_and_key(sample_firmware_hex, tmp_path, monkeypatch):
     from cryptography.hazmat.primitives.asymmetric import ed25519
     from cryptography.hazmat.primitives import serialization
 
@@ -41,6 +41,11 @@ def signed_manifest_and_key(sample_firmware_hex, tmp_path):
         priv = load_pem_private_key(key_path.read_bytes(), password=None)
     else:
         priv = ed25519.Ed25519PrivateKey.generate()
+        pub_hex = priv.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw
+        ).hex()
+        monkeypatch.setattr("software.core.firmware_security.DEVPRO_FIRMWARE_PUBKEY_HEX", pub_hex)
 
     sha = compute_file_sha256(sample_firmware_hex)
     size = sample_firmware_hex.stat().st_size
