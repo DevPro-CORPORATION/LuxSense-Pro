@@ -555,9 +555,10 @@ class BridgeBackend(QObject):
             self.firmwareCheckResult.emit(json.dumps(res))
             return json.dumps(res)
 
+    @Slot(str, str, bool, str, result=bool)
     @Slot(str, str, bool, result=bool)
-    def startFirmwareFlash(self, port: str, hex_path_str: str, allow_downgrade: bool = False) -> bool:
-        """Safely flash physical Arduino Uno firmware with explicit pre-flight checks."""
+    def startFirmwareFlash(self, port: str, hex_path_str: str, allow_downgrade: bool = False, board: str = "uno") -> bool:
+        """Safely flash physical Arduino Uno/Nano firmware with explicit pre-flight checks."""
         if self.firmware_worker and self.firmware_worker.isRunning():
             self.firmwareFlashCompleted.emit(False, "A firmware update is already in progress.")
             return False
@@ -599,6 +600,7 @@ class BridgeBackend(QObject):
             hex_path=hex_path,
             current_firmware_version="1.2.0",
             allow_downgrade=allow_downgrade,
+            board_type=board,
             stop_telemetry_fn=stop_telemetry,
             resume_telemetry_fn=resume_telemetry,
             parent=self

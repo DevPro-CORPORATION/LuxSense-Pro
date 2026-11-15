@@ -10,7 +10,7 @@ from software.core.config import APP_VERSION
 def test_semver_comparisons():
     current = parse_version(APP_VERSION)
     newer = parse_version("2.4.0")
-    patch = parse_version("2.3.1")
+    patch = parse_version("2.3.2")
     older = parse_version("2.2.0")
 
     assert newer > current
@@ -98,3 +98,22 @@ def test_sha256sums_parser():
     assert "empty.txt" in parsed
     assert "abc.bin" in parsed
     assert parsed["empty.txt"] == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+def test_find_installer_and_portable_assets():
+    from updater.update_manager import UpdateManager
+    mgr = UpdateManager()
+    release_data = {
+        "assets": [
+            {"name": "LuxSense-Pro-Setup-v2.3.1.exe", "browser_download_url": "https://example.com/setup.exe"},
+            {"name": "LuxSense-Pro-v2.3.1-portable.zip", "browser_download_url": "https://example.com/portable.zip"},
+            {"name": "updater.exe", "browser_download_url": "https://example.com/updater.exe"},
+            {"name": "SHA256SUMS.txt", "browser_download_url": "https://example.com/SHA256SUMS.txt"}
+        ]
+    }
+    installer = mgr.find_installer_asset(release_data)
+    assert installer is not None
+    assert installer["name"] == "LuxSense-Pro-Setup-v2.3.1.exe"
+
+    portable = mgr.find_portable_asset(release_data)
+    assert portable is not None
+    assert portable["name"] == "LuxSense-Pro-v2.3.1-portable.zip"

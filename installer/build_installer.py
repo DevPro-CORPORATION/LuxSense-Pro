@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
-APP_VERSION = "2.3.0"
+APP_VERSION = "2.3.1"
 DIST_DIR = ROOT_DIR / "dist"
 INSTALLER_DIR = ROOT_DIR / "dist_installer"
 ISCC_PATH = Path(r"C:\Users\AIMLOPS\AppData\Local\Programs\Inno Setup 6\ISCC.exe")
@@ -174,7 +174,7 @@ def step_generate_checksums_and_manifest():
         "release_name": f"LuxSense Pro v{APP_VERSION} — Unified Software & Firmware Update Architecture",
         "published_at": "2026-11-15T15:45:00Z",
         "prerelease": False,
-        "release_notes": "Official release of LuxSense Pro v2.3.0 featuring a unified software and physical microcontroller firmware update architecture, Ed25519 digital signature verification, dedicated in-app Firmware Update Center, zero automatic flashing guarantees, and complete bootloader recovery tooling.",
+        "release_notes": "Official release of LuxSense Pro v2.3.1 featuring complete production bug hunt resolutions, enhanced Light Mode contrast and dynamic chart theming, dual Uno/Nano AVR flashing support, directory collision-safe updater rollback, and validated hardware integration.",
         "assets": assets_manifest
     }
     manifest_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")

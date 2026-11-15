@@ -70,6 +70,7 @@ class FirmwareFlashWorker(QThread):
         hex_path: Path,
         current_firmware_version: Optional[str] = None,
         allow_downgrade: bool = False,
+        board_type: str = "uno",
         stop_telemetry_fn: Optional[Callable[[], None]] = None,
         resume_telemetry_fn: Optional[Callable[[], None]] = None,
         parent: Optional[QObject] = None
@@ -80,6 +81,7 @@ class FirmwareFlashWorker(QThread):
         self.hex_path = hex_path
         self.current_firmware_version = current_firmware_version
         self.allow_downgrade = allow_downgrade
+        self.board_type = (board_type or "uno").lower()
         self.stop_telemetry_fn = stop_telemetry_fn
         self.resume_telemetry_fn = resume_telemetry_fn
         self._is_aborted = False
@@ -108,12 +110,13 @@ class FirmwareFlashWorker(QThread):
         self.progressChanged.emit(5, "Verifying digital signature and hex integrity...")
         self._log("Phase 1: Validating firmware package and publisher signature...")
 
+        target_fqbn = "arduino:avr:nano" if "nano" in self.board_type else "arduino:avr:uno"
         ok, msg, manifest = verify_firmware_package(
             self.manifest_data,
             hex_path=self.hex_path,
             current_firmware_version=self.current_firmware_version,
             allow_downgrade=self.allow_downgrade,
-            expected_board="arduino:avr:uno",
+            expected_board=target_fqbn,
             expected_mcu="atmega328p"
         )
         if not ok:
@@ -174,6 +177,8 @@ class FirmwareFlashWorker(QThread):
         # Strategy A: Use avrdude directly with Optiboot configuration
         if avrdude and avrdude_conf:
             flasher_type = "avrdude"
+            # Nano classic bootloader typically runs at 57600 baud, Uno/Nano New at 115200
+            baud = "57600" if self.board_type == "nano_old" else "115200"
             cmd = [
                 str(avrdude),
                 "-C", str(avrdude_conf),
@@ -181,7 +186,7 @@ class FirmwareFlashWorker(QThread):
                 "-p", "m328p",
                 "-c", "arduino",
                 "-P", str(self.port),
-                "-b", "115200",
+                "-b", baud,
                 "-D",
                 f"-Uflash:w:{str(self.hex_path)}:i"
             ]
@@ -189,11 +194,12 @@ class FirmwareFlashWorker(QThread):
         elif arduino_cli:
             flasher_type = "arduino-cli"
             sketch_dir = ROOT_DIR / "firmware" / "LuxSense_Arduino"
+            fqbn = "arduino:avr:nano" if "nano" in self.board_type else "arduino:avr:uno"
             cmd = [
                 str(arduino_cli),
                 "upload",
                 "-p", str(self.port),
-                "--fqbn", "arduino:avr:uno",
+                "--fqbn", fqbn,
                 str(sketch_dir)
             ]
         else:

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   Binary, 
   Cpu, 
@@ -12,6 +13,8 @@ import {
 } from 'lucide-react';
 
 export const TechnicalInfoWorkspace: React.FC = () => {
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
@@ -19,7 +22,11 @@ export const TechnicalInfoWorkspace: React.FC = () => {
   useEffect(() => {
     if (!chartRef.current) return;
 
-    const inst = echarts.init(chartRef.current, 'dark');
+    if (chartInstance.current) {
+      chartInstance.current.dispose();
+    }
+
+    const inst = echarts.init(chartRef.current, isLight ? undefined : 'dark');
     chartInstance.current = inst;
     const ro = new ResizeObserver(() => inst.resize());
     ro.observe(chartRef.current);
@@ -45,7 +52,7 @@ export const TechnicalInfoWorkspace: React.FC = () => {
         text: 'Spectral Responsivity: BH1750FVI vs. CIE 1931 Photopic Curve V(λ)',
         left: 0,
         textStyle: {
-          color: '#DFE2E8',
+          color: isLight ? '#0F172A' : '#DFE2E8',
           fontSize: 12,
           fontFamily: 'JetBrains Mono',
           fontWeight: 600
@@ -53,9 +60,9 @@ export const TechnicalInfoWorkspace: React.FC = () => {
       },
       tooltip: {
         trigger: 'axis',
-        backgroundColor: '#161920',
-        borderColor: '#2B3240',
-        textStyle: { color: '#DFE2E8', fontFamily: 'JetBrains Mono', fontSize: 11 },
+        backgroundColor: isLight ? '#FFFFFF' : '#161920',
+        borderColor: isLight ? '#CBD5E1' : '#2B3240',
+        textStyle: { color: isLight ? '#0F172A' : '#DFE2E8', fontFamily: 'JetBrains Mono', fontSize: 11 },
         formatter: (params: any) => {
           if (!params || !params[0]) return '';
           return `
@@ -70,7 +77,7 @@ export const TechnicalInfoWorkspace: React.FC = () => {
       legend: {
         right: 10,
         top: 0,
-        textStyle: { color: '#8C96A8', fontFamily: 'JetBrains Mono', fontSize: 10 }
+        textStyle: { color: isLight ? '#475569' : '#8C96A8', fontFamily: 'JetBrains Mono', fontSize: 10 }
       },
       grid: {
         top: 40,
@@ -81,19 +88,19 @@ export const TechnicalInfoWorkspace: React.FC = () => {
       xAxis: {
         type: 'category',
         name: 'λ (nm)',
-        nameTextStyle: { color: '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 },
+        nameTextStyle: { color: isLight ? '#64748B' : '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 },
         data: wavelengths.map(String),
-        axisLine: { lineStyle: { color: '#272C38' } },
-        splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.04)' } },
-        axisLabel: { color: '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 9 }
+        axisLine: { lineStyle: { color: isLight ? '#CBD5E1' : '#272C38' } },
+        splitLine: { lineStyle: { color: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.04)' } },
+        axisLabel: { color: isLight ? '#64748B' : '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 9 }
       },
       yAxis: {
         type: 'value',
         name: 'Rel. Sensitivity',
-        nameTextStyle: { color: '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 },
+        nameTextStyle: { color: isLight ? '#64748B' : '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 },
         axisLine: { show: false },
-        splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.04)' } },
-        axisLabel: { color: '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 }
+        splitLine: { lineStyle: { color: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.04)' } },
+        axisLabel: { color: isLight ? '#64748B' : '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 }
       },
       series: [
         {
@@ -128,7 +135,7 @@ export const TechnicalInfoWorkspace: React.FC = () => {
       inst.dispose();
       chartInstance.current = null;
     };
-  }, []);
+  }, [resolvedTheme, isLight]);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-chassis-900 p-5 space-y-4 overflow-y-auto">

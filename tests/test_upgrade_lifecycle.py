@@ -48,10 +48,11 @@ def test_lifecycle_1_version_detection_from_v210(mock_release_manifest):
 def test_lifecycle_2_manifest_asset_and_checksum_integrity(mock_release_manifest, mock_sha256sums):
     """Verify release manifest assets match SHA256SUMS.txt."""
     assets = mock_release_manifest["assets"]
-    setup_asset = assets.get("LuxSense-Pro-Setup-v2.3.0.exe")
+    setup_name = f"LuxSense-Pro-Setup-v{mock_release_manifest['version']}.exe"
+    setup_asset = assets.get(setup_name)
     assert setup_asset is not None
     assert setup_asset["sha256"] in mock_sha256sums.values()
-    assert "LuxSense-Pro-Setup-v2.3.0.exe" in mock_sha256sums
+    assert setup_name in mock_sha256sums
 
 def test_lifecycle_3_failed_download_cleanup():
     """Verify interrupted/failed download leaves no corrupt staging file."""

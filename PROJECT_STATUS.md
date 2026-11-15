@@ -324,3 +324,41 @@ Testing conducted directly on physical silicon (Arduino Uno R3 on `COM5` with GY
      - `docs/evidence/ui_v230_appearance_settings.png` (Settings Appearance tab)
      - `docs/evidence/ui_v230_firmware_update_center.png` (Firmware Update Center)
      - `docs/evidence/ui_v230_light_mode.png` (Clean Metrology Light Mode in full workstation)
+
+---
+
+## 15. v2.3.1 Final Production Bug Hunt, UI Refinement & Hardware Validation Milestone
+**Document Version:** 2.3.1-PRODUCTION-APPROVED  
+**Date:** 2026-11-15  
+**Base Release:** `v2.3.0`  
+**Target Release:** `v2.3.1`  
+**Status:** **100% COMPLETE & VERIFIED — 52/52 TESTS PASSING**
+
+### Resolved Defects & Architectural Improvements:
+
+1. **Serial Worker Shutdown Latency Resolution:**
+   - In `software/core/serial_worker.py`, re-ordered `SerialWorker.stop()` to close the active COM port prior to calling `wait(2000)`, eliminating a 2-second blocking delay on application exit or USB disconnect.
+
+2. **Light Mode Metrology Contrast & Chart Polish:**
+   - Eliminated dark-mode residual classes in `LiveMonitorWorkspace.tsx` (`bg-zinc-800/80`, `bg-zinc-700` in disconnected banner replaced with theme-aware `bg-chassis-850` and `bg-chassis-800`).
+   - Mapped `text-zinc-600` in `index.css` to high-contrast slate `#475569` under `html.light`.
+   - Bound the photopic responsivity spectral comparison chart in `TechnicalInfoWorkspace.tsx` to dynamic theme changes, rendering crystal-clear light-mode typography, borders, and gradients.
+
+3. **Multi-Board AVR Flashing Architecture:**
+   - Extended `verify_firmware_package` and `FirmwareFlashWorker` to recognize the Arduino Nano (ATmega328P 16MHz) hardware target alongside the Arduino Uno R3.
+   - Dynamic FQBN configuration (`arduino:avr:uno` vs `arduino:avr:nano`) and baud rate selection (115200 vs 57600).
+   - Bridged frontend `selectedBoard` state directly to the PySide6 backend flasher slot.
+
+4. **Updater Bootstrapper Directory Collision Safeguard:**
+   - In `updater/bootstrapper.py`, added `dirs_exist_ok=True` to `create_backup` and `rollback`, preventing Windows `FileExistsError` during locked file recovery.
+
+5. **Portable Distribution Asset Resolution:**
+   - Implemented `find_portable_asset()` in `updater/update_manager.py` to support portable ZIP update detection and workflows.
+
+6. **Production Packaging & Release Assets:**
+   - Compiled `dist/LuxSensePro.exe` and `dist/updater.exe` via PyInstaller.
+   - Built Inno Setup installer `dist_installer/LuxSense-Pro-Setup-v2.3.1.exe` (230,766,339 bytes).
+   - Created standalone archive `dist_installer/LuxSense-Pro-v2.3.1-portable.zip` (237,302,293 bytes).
+   - Signed microcode manifest and regenerated `dist_installer/SHA256SUMS.txt` and `dist_installer/release-manifest.json`.
+   - Updated website `website/index.html` to reference `v2.3.1` assets and checksums.
+

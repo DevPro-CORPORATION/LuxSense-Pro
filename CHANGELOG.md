@@ -3,6 +3,20 @@
 All notable changes to LuxSense Pro are documented in this file.
 Version formatting follows [Semantic Versioning](https://semver.org/).
 
+## [2.3.1] - 2026-11-15
+
+### Added
+- **Multi-Board AVR Flashing Support:** Extended the Firmware Update Center and security validation engine to support both Arduino Uno R3 and Arduino Nano (ATmega328P 16MHz) hardware targets, including dynamic FQBN configuration and baud rate selection.
+- **Dynamic Spectral Chart Theming:** Bound the Technical Info photopic responsivity comparison chart (BH1750 vs. CIE 1931 V(λ)) to dynamic theme changes, rendering crystal-clear light-mode typography, borders, and gradients.
+- **Portable Release Asset Resolver:** Added `find_portable_asset()` to the update subsystem for direct automated discovery and extraction of standalone portable distributions.
+- **Firmware Security Compatibility Test Suite:** Added unit tests verifying cross-board ATmega328P compatibility between Uno and Nano targets.
+
+### Fixed
+- **Serial Worker Shutdown Latency:** Re-ordered `SerialWorker.stop()` to close the active COM port prior to calling `wait()`, eliminating a 2-second blocking delay during disconnect and shutdown.
+- **Light Mode Contrast Consistency:** Eliminated hardcoded dark backgrounds (`bg-zinc-800/80`, `bg-zinc-700`) in the disconnected hardware banner, mapping theme-aware variables and adding light-mode styling for secondary text classes.
+- **Updater Bootstrapper Directory Collisions:** Configured `dirs_exist_ok=True` in `updater/bootstrapper.py` backup creation and rollback mechanisms to prevent Windows `FileExistsError` during locked file recovery.
+- **UserSettings Theme Validation:** Added post-initialization dataclass normalization to ensure corrupted or unexpected theme settings gracefully fallback to supported profiles (`dark`, `light`, `system`).
+
 ## [2.3.0] - 2026-11-15
 
 ### Added

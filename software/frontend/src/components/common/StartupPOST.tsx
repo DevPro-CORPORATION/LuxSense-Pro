@@ -19,7 +19,7 @@ export const StartupPOST: React.FC<StartupPOSTProps> = ({ onComplete }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [progressPercent, setProgressPercent] = useState<number>(5);
   const [logs, setLogs] = useState<string[]>([]);
-  const [appVersion, setAppVersion] = useState<string>('2.3.0');
+  const [appVersion, setAppVersion] = useState<string>('2.3.1');
   const [hasTimeoutWarning, setHasTimeoutWarning] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<SVGSVGElement>(null);
@@ -72,7 +72,7 @@ export const StartupPOST: React.FC<StartupPOSTProps> = ({ onComplete }) => {
         setStepStates(prev => prev.map((s, idx) => idx === 0 ? { ...s, status: 'active' } : s));
         setLogs(prev => [...prev, '[BOOT +40ms] Initializing LuxSense Pro runtime core...']);
 
-        let ver = '2.3.0';
+        let ver = '2.3.1';
         try {
           ver = await bridge.getAppVersion();
           setAppVersion(ver);

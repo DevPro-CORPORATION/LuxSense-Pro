@@ -241,6 +241,18 @@ class UpdateManager(QObject):
                 return asset
         return None
 
+    def find_portable_asset(self, release_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Finds Windows portable zip archive in release assets."""
+        assets = release_data.get("assets", [])
+        for asset in assets:
+            name = asset.get("name", "").lower()
+            if name.endswith(".zip") and "portable" in name:
+                return asset
+        for asset in assets:
+            if asset.get("name", "").lower().endswith(".zip"):
+                return asset
+        return None
+
     def start_download(self, release_data: Dict[str, Any]):
         """Downloads the installer asset with cryptographic verification."""
         installer_asset = self.find_installer_asset(release_data)

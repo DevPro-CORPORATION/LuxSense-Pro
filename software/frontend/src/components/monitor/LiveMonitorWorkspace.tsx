@@ -190,7 +190,7 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
           <div className="bg-chassis-950 border border-border rounded-xl p-4 flex flex-col justify-between">
             <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider flex justify-between">
               <span>Foot-Candles</span>
-              <span className="text-zinc-600">1 fc = 10.76 lx</span>
+              <span className="text-zinc-400">1 fc = 10.76 lx</span>
             </div>
             <div className="my-2">
               <span className="text-3xl font-bold font-mono text-zinc-100 num-tabular">
@@ -207,7 +207,7 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
           <div className="bg-chassis-950 border border-border rounded-xl p-4 flex flex-col justify-between">
             <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider flex justify-between">
               <span>Spectral Irradiance</span>
-              <span className="text-zinc-600">λ = 555nm</span>
+              <span className="text-zinc-400">λ = 555nm</span>
             </div>
             <div className="my-2">
               <span className="text-3xl font-bold font-mono text-zinc-100 num-tabular">
@@ -261,12 +261,12 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
         </div>
       )}
       {hardwareState === 'DISCONNECTED' && (
-        <div className="bg-zinc-800/80 border border-border text-zinc-400 px-4 py-3 rounded-xl flex items-center justify-between font-mono text-xs">
+        <div className="bg-chassis-850 border border-border text-zinc-400 px-4 py-3 rounded-xl flex items-center justify-between font-mono text-xs">
           <div className="flex items-center space-x-2">
             <span className="font-bold text-zinc-300">DISCONNECTED:</span>
             <span>Arduino Uno serial port is offline or disconnected. Reconnect USB cable to resume real measurements.</span>
           </div>
-          <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-700 text-zinc-300 uppercase font-semibold">OFFLINE</span>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-chassis-800 text-zinc-300 uppercase font-semibold">OFFLINE</span>
         </div>
       )}
       {hardwareState === 'CONNECTING' && (

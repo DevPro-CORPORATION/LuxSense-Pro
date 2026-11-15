@@ -53,7 +53,7 @@ def create_backup(target_dir: Path) -> Path:
     logging.info(f"Creating backup from {target_dir} to {backup_dir}")
     if backup_dir.exists():
         shutil.rmtree(backup_dir, ignore_errors=True)
-    shutil.copytree(target_dir, backup_dir)
+    shutil.copytree(target_dir, backup_dir, dirs_exist_ok=True)
     return backup_dir
 
 def rollback(backup_dir: Path, target_dir: Path):
@@ -62,7 +62,7 @@ def rollback(backup_dir: Path, target_dir: Path):
     try:
         if target_dir.exists():
             shutil.rmtree(target_dir, ignore_errors=True)
-        shutil.copytree(backup_dir, target_dir)
+        shutil.copytree(backup_dir, target_dir, dirs_exist_ok=True)
         logging.info("Rollback completed successfully.")
     except Exception as e:
         logging.critical(f"FATAL: Rollback failed: {e}")

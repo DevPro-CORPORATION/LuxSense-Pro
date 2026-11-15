@@ -111,7 +111,19 @@ def verify_firmware_package(
         return False, f"Security rejection: {sig_msg}", manifest
 
     # Step 2: Architecture & MCU Compatibility check
-    if manifest.target_board.lower() != expected_board.lower():
+    def normalize_board(b: str) -> str:
+        b_clean = b.lower().strip()
+        if "uno" in b_clean:
+            return "uno"
+        if "nano" in b_clean:
+            return "nano"
+        return b_clean
+
+    board_norm = normalize_board(manifest.target_board)
+    expected_norm = normalize_board(expected_board)
+    compatible_family = {"uno", "nano"}
+
+    if board_norm != expected_norm and not (board_norm in compatible_family and expected_norm in compatible_family):
         return False, (
             f"Hardware incompatibility: Firmware targets '{manifest.target_board}', "
             f"but connected hardware requires '{expected_board}'."

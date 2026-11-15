@@ -371,7 +371,7 @@ class BridgeClient {
       update_channel: 'stable',
       auto_check_updates: true,
       last_update_check: '2026-11-15 15:30:00',
-      latest_known_version: '2.3.0',
+      latest_known_version: '2.3.1',
       theme: 'dark',
     };
   }
@@ -380,7 +380,7 @@ class BridgeClient {
     if (this.backendObj?.getAppVersion) {
       return await this.backendObj.getAppVersion();
     }
-    return '2.3.0';
+    return '2.3.1';
   }
 
   public async saveSettings(settings: UserSettings): Promise<boolean> {
@@ -624,9 +624,9 @@ class BridgeClient {
     };
   }
 
-  public async startFirmwareFlash(port: string, hexPath: string = '', allowDowngrade: boolean = false): Promise<boolean> {
+  public async startFirmwareFlash(port: string, hexPath: string = '', allowDowngrade: boolean = false, board: string = 'uno'): Promise<boolean> {
     if (this.backendObj?.startFirmwareFlash) {
-      return await this.backendObj.startFirmwareFlash(port, hexPath, allowDowngrade);
+      return await this.backendObj.startFirmwareFlash(port, hexPath, allowDowngrade, board);
     }
     return true;
   }

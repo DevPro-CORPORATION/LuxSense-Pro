@@ -84,6 +84,9 @@ html.light .text-zinc-400 {
 html.light .text-zinc-500 {
   color: #64748B !important;
 }
+html.light .text-zinc-600 {
+  color: #475569 !important;
+}
 html.light .bg-chassis-950 {
   background-color: #FFFFFF !important;
 }

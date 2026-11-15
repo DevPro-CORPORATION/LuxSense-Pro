@@ -152,3 +152,15 @@ def test_unsigned_manifest_rejected(sample_firmware_hex, signed_manifest_and_key
     ok, msg, _ = verify_firmware_package(data, hex_path=sample_firmware_hex)
     assert ok is False
     assert "unsigned" in msg.lower()
+
+def test_nano_board_compatibility_allowed(sample_firmware_hex, signed_manifest_and_key):
+    manifest, priv = signed_manifest_and_key
+    manifest.target_board = "arduino:avr:uno"
+    manifest.signature = priv.sign(manifest.canonical_bytes()).hex()
+
+    ok, msg, _ = verify_firmware_package(
+        manifest.__dict__,
+        hex_path=sample_firmware_hex,
+        expected_board="arduino:avr:nano"
+    )
+    assert ok is True

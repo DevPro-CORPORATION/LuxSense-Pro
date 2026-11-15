@@ -186,5 +186,5 @@ class SerialWorker(QThread):
 
     def stop(self):
         self._running = False
-        self.wait(2000)
         self.close_serial()
+        self.wait(2000)

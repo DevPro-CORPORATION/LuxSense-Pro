@@ -43,7 +43,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
     update_channel: 'stable',
     auto_check_updates: true,
     last_update_check: null,
-    latest_known_version: '2.3.0',
+    latest_known_version: '2.3.1',
     theme: 'dark'
   });
 
@@ -52,7 +52,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
   // Software Update Center state
-  const [installedVersion, setInstalledVersion] = useState<string>('2.3.0');
+  const [installedVersion, setInstalledVersion] = useState<string>('2.3.1');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<any>(null);
   const [downloadProgress, setDownloadProgress] = useState<{
@@ -242,7 +242,7 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
 
     const hexPath = firmwareCheckResult?.hex_path || '';
     try {
-      await bridge.startFirmwareFlash(settings.serial_port, hexPath, allowDowngrade);
+      await bridge.startFirmwareFlash(settings.serial_port, hexPath, allowDowngrade, selectedBoard);
     } catch (e: any) {
       setIsFlashing(false);
       setFirmwareResult({ success: false, message: `Invocation error: ${e?.message || e}` });

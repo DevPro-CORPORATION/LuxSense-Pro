@@ -1,6 +1,6 @@
 # LuxSense Pro — Continuous In-App Update Architecture
 
-**Document Version:** 2.1.0-PRODUCTION  
+**Document Version:** 2.3.1-PRODUCTION  
 **Date:** November 15, 2026  
 **Publisher:** DevPro-CORP  
 **Module:** Update Center & Standalone Bootstrapper Pipeline
@@ -69,10 +69,11 @@ LuxSense Pro delivers seamless software updates through an integrated, in-app Up
 Because Windows locks executing `.exe` and `.dll` files in memory, an active application cannot overwrite its own executable. `updater.exe` resolves this:
 
 1. **Process Wait Loop:** Queries Win32 `OpenProcess(SYNCHRONIZE, ...)` on the parent application PID. Waits up to 15 seconds for clean termination.
-2. **Pre-Update Backup:** Deep-copies the current application directory to:
+2. **Pre-Update Backup:** Deep-copies the current application directory (with `dirs_exist_ok=True` collision protection) to:
    `%LOCALAPPDATA%\Programs\DevPro\LuxSense Pro_backup_YYYYMMDD_HHMMSS`
 3. **Silent Installation:** Invokes the installer with `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-`.
-4. **Failure Recovery:** If the installer exits with a non-zero code, `updater.exe` deletes the corrupted directory and restores the full directory from the backup before alerting the user.
+4. **Failure Recovery:** If the installer exits with a non-zero code, `updater.exe` deletes the corrupted directory and restores the full directory from the backup before alerting the user. The rollback routine also employs recursive directory collision safeguards.
+5. **Portable Distribution Support:** The update subsystem includes `find_portable_asset()` to locate standalone portable ZIP packages when installed outside traditional Inno Setup directories.
 
 ---
 
