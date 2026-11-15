@@ -28,6 +28,7 @@ export interface UserSettings {
   auto_check_updates: boolean;
   last_update_check: string | null;
   latest_known_version: string;
+  theme?: 'dark' | 'light' | 'system';
 }
 
 export interface TelemetryRecord {
@@ -369,8 +370,9 @@ class BridgeClient {
       baud_rate: 115200,
       update_channel: 'stable',
       auto_check_updates: true,
-      last_update_check: '2026-11-13 22:00:00',
-      latest_known_version: '2.1.0',
+      last_update_check: '2026-11-15 15:30:00',
+      latest_known_version: '2.3.0',
+      theme: 'dark',
     };
   }
 

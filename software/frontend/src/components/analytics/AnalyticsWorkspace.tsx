@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
 import { bridge, TelemetryRecord } from '../../bridge/bridgeClient';
 import { StatisticalSummary } from '../../types';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   BarChart2, 
   Download, 
@@ -15,6 +16,8 @@ import {
 } from 'lucide-react';
 
 export const AnalyticsWorkspace: React.FC = () => {
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
   const [records, setRecords] = useState<TelemetryRecord[]>([]);
   const [sampleLimit, setSampleLimit] = useState<number>(100);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -108,12 +111,23 @@ export const AnalyticsWorkspace: React.FC = () => {
     updateHistogram(values, min, max);
   };
 
+  // Dispose chart on theme change so it reinitializes with the correct theme
+  useEffect(() => {
+    if (histInstance.current) {
+      histInstance.current.dispose();
+      histInstance.current = null;
+      if (records.length > 0) {
+        computeStatistics(records);
+      }
+    }
+  }, [resolvedTheme]);
+
   // Draw histogram with Apache ECharts
   const updateHistogram = (values: number[], min: number, max: number) => {
     if (!histRef.current) return;
 
     if (!histInstance.current) {
-      histInstance.current = echarts.init(histRef.current, 'dark');
+      histInstance.current = echarts.init(histRef.current, isLight ? undefined : 'dark');
       roRef.current = new ResizeObserver(() => histInstance.current?.resize());
       roRef.current.observe(histRef.current);
     }
@@ -142,7 +156,7 @@ export const AnalyticsWorkspace: React.FC = () => {
         text: 'Photopic Frequency Distribution (Histogram)',
         left: 0,
         textStyle: {
-          color: '#DFE2E8',
+          color: isLight ? '#0F172A' : '#DFE2E8',
           fontSize: 12,
           fontFamily: 'JetBrains Mono',
           fontWeight: 600
@@ -151,12 +165,12 @@ export const AnalyticsWorkspace: React.FC = () => {
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
-        backgroundColor: '#161920',
-        borderColor: '#2B3240',
-        textStyle: { color: '#DFE2E8', fontFamily: 'JetBrains Mono', fontSize: 11 },
+        backgroundColor: isLight ? '#FFFFFF' : '#161920',
+        borderColor: isLight ? '#CBD5E1' : '#2B3240',
+        textStyle: { color: isLight ? '#0F172A' : '#DFE2E8', fontFamily: 'JetBrains Mono', fontSize: 11 },
         formatter: (params: any) => {
           const p = params[0];
-          return `${p.name} lx: <strong style="color: #21D789;">${p.value} samples</strong>`;
+          return `${p.name} lx: <strong style="color: ${isLight ? '#059669' : '#21D789'};">${p.value} samples</strong>`;
         }
       },
       grid: {
@@ -168,9 +182,9 @@ export const AnalyticsWorkspace: React.FC = () => {
       xAxis: {
         type: 'category',
         data: binLabels,
-        axisLine: { lineStyle: { color: '#272C38' } },
+        axisLine: { lineStyle: { color: isLight ? '#CBD5E1' : '#272C38' } },
         axisLabel: {
-          color: '#6F788A',
+          color: isLight ? '#64748B' : '#6F788A',
           fontFamily: 'JetBrains Mono',
           fontSize: 9,
           rotate: 35
@@ -179,8 +193,8 @@ export const AnalyticsWorkspace: React.FC = () => {
       yAxis: {
         type: 'value',
         axisLine: { show: false },
-        splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.04)' } },
-        axisLabel: { color: '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 }
+        splitLine: { lineStyle: { color: isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.04)' } },
+        axisLabel: { color: isLight ? '#64748B' : '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 }
       },
       series: [
         {
@@ -189,8 +203,8 @@ export const AnalyticsWorkspace: React.FC = () => {
           data: bins,
           itemStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#21D789' },
-              { offset: 1, color: 'rgba(33, 215, 137, 0.2)' }
+              { offset: 0, color: isLight ? '#059669' : '#21D789' },
+              { offset: 1, color: isLight ? 'rgba(5, 150, 105, 0.2)' : 'rgba(33, 215, 137, 0.2)' }
             ]),
             borderRadius: [3, 3, 0, 0]
           }

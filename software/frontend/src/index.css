@@ -2,16 +2,119 @@
 @tailwind components;
 @tailwind utilities;
 
+:root, html.dark {
+  --bg-chassis-950: #07080A;
+  --bg-chassis-900: #0B0C0E;
+  --bg-chassis-850: #0F1115;
+  --bg-chassis-800: #14171E;
+  --bg-chassis-750: #1A1E26;
+  --bg-chassis-700: #212630;
+  
+  --surface-base: #111317;
+  --surface-panel: #161920;
+  --surface-elevated: #1C212B;
+  --surface-overlay: #222834;
+
+  --border-subtle: #222732;
+  --border-default: #2B3240;
+  --border-focus: #3D4659;
+  --border-bright: #4F5B73;
+
+  --text-main: #DFE2E8;
+  --text-muted: #94A3B8;
+  --text-heading: #FFFFFF;
+}
+
+html.light {
+  --bg-chassis-950: #FFFFFF;
+  --bg-chassis-900: #F8FAFC;
+  --bg-chassis-850: #F1F5F9;
+  --bg-chassis-800: #E2E8F0;
+  --bg-chassis-750: #CBD5E1;
+  --bg-chassis-700: #94A3B8;
+
+  --surface-base: #FFFFFF;
+  --surface-panel: #F8FAFC;
+  --surface-elevated: #F1F5F9;
+  --surface-overlay: #E2E8F0;
+
+  --border-subtle: #E2E8F0;
+  --border-default: #CBD5E1;
+  --border-focus: #94A3B8;
+  --border-bright: #64748B;
+
+  --text-main: #0F172A;
+  --text-muted: #475569;
+  --text-heading: #020617;
+}
+
 @layer base {
   * {
-    border-color: #272C38;
+    border-color: var(--border-default);
   }
   body {
-    background-color: #0B0C0E;
-    color: #DFE2E8;
+    background-color: var(--bg-chassis-900);
+    color: var(--text-main);
     user-select: none;
     -webkit-user-select: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
+}
+
+/* Light Mode Contrast Overrides */
+html.light body {
+  background-color: #F8FAFC;
+  color: #0F172A;
+}
+html.light .text-white {
+  color: #0F172A !important;
+}
+html.light .text-zinc-100 {
+  color: #0F172A !important;
+}
+html.light .text-zinc-200 {
+  color: #1E293B !important;
+}
+html.light .text-zinc-300 {
+  color: #334155 !important;
+}
+html.light .text-zinc-400 {
+  color: #475569 !important;
+}
+html.light .text-zinc-500 {
+  color: #64748B !important;
+}
+html.light .bg-chassis-950 {
+  background-color: #FFFFFF !important;
+}
+html.light .bg-chassis-900 {
+  background-color: #F8FAFC !important;
+}
+html.light .bg-chassis-850 {
+  background-color: #F1F5F9 !important;
+}
+html.light .bg-chassis-800 {
+  background-color: #E2E8F0 !important;
+}
+html.light .border-border {
+  border-color: #CBD5E1 !important;
+}
+html.light .border-border-focus {
+  border-color: #94A3B8 !important;
+}
+html.light .optical-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px) !important;
+}
+html.light ::-webkit-scrollbar-track {
+  background: #F1F5F9 !important;
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: #CBD5E1 !important;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8 !important;
 }
 
 /* Tabular figures for numbers */

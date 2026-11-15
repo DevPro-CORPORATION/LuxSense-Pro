@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { bridge, UserSettings } from '../../bridge/bridgeClient';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   Settings, 
   DownloadCloud, 
@@ -18,7 +19,11 @@ import {
   HelpCircle,
   X,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Sun,
+  Moon,
+  Monitor,
+  Palette
 } from 'lucide-react';
 
 interface SettingsWorkspaceProps {
@@ -28,7 +33,8 @@ interface SettingsWorkspaceProps {
 export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
   onUpdateAvailableChange
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'software' | 'firmware'>('software');
+  const { theme, resolvedTheme, setTheme } = useTheme();
+  const [activeSubTab, setActiveSubTab] = useState<'software' | 'firmware' | 'appearance'>('software');
 
   // Settings state
   const [settings, setSettings] = useState<UserSettings>({
@@ -37,7 +43,8 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
     update_channel: 'stable',
     auto_check_updates: true,
     last_update_check: null,
-    latest_known_version: '2.3.0'
+    latest_known_version: '2.3.0',
+    theme: 'dark'
   });
 
   const [availablePorts, setAvailablePorts] = useState<string[]>([]);
@@ -67,6 +74,8 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
   const [userConfirmedRisk, setUserConfirmedRisk] = useState(false);
   const [allowDowngrade, setAllowDowngrade] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [selectedBoard, setSelectedBoard] = useState<string>('uno');
+  const [selectedFirmwareVer, setSelectedFirmwareVer] = useState<string>('2.0.0');
   const consoleEndRef = useRef<HTMLDivElement>(null);
 
   // Load initial settings & firmware status
@@ -279,10 +288,22 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
             }`}
           >
             <Cpu className="w-3.5 h-3.5 text-metrology-blue" />
-            <span>ATmega328P Firmware Center</span>
+            <span>Firmware Update Center</span>
             {firmwareCheckResult?.available && (
               <span className="w-2 h-2 rounded-full bg-metrology-amber animate-pulse" />
             )}
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('appearance')}
+            className={`px-3 py-1.5 rounded transition-all flex items-center space-x-2 ${
+              activeSubTab === 'appearance'
+                ? 'bg-chassis-800 text-white font-semibold border border-border-focus shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Palette className="w-3.5 h-3.5 text-metrology-amber" />
+            <span>Appearance &amp; Themes</span>
           </button>
         </div>
 
@@ -599,33 +620,91 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
 
               {/* Hardware Spec Grid */}
               <div className="space-y-2.5 font-mono text-xs">
-                <div className="p-3 bg-chassis-900 rounded-lg border border-border space-y-1.5">
-                  <div className="flex justify-between items-center text-zinc-400 text-[11px]">
-                    <span>Target Board:</span>
-                    <span className="text-white font-semibold">{firmwareStatus?.board || 'Arduino Uno R3'}</span>
+                <div className="p-3 bg-chassis-900 rounded-lg border border-border space-y-2.5">
+                  <div>
+                    <label className="text-zinc-400 text-[11px] block mb-1">Target Board Architecture:</label>
+                    <select
+                      value={selectedBoard}
+                      onChange={(e) => setSelectedBoard(e.target.value)}
+                      disabled={isFlashing}
+                      className="w-full bg-chassis-850 border border-border rounded p-1.5 text-xs text-white focus:border-border-focus focus:outline-none"
+                    >
+                      <option value="uno">Arduino Uno R3 (ATmega328P — 16 MHz AVR)</option>
+                      <option value="nano">Arduino Nano (ATmega328P — 16 MHz AVR)</option>
+                    </select>
                   </div>
-                  <div className="flex justify-between items-center text-zinc-400 text-[11px]">
-                    <span>Microcontroller (MCU):</span>
-                    <span className="text-zinc-200">{firmwareStatus?.mcu || 'ATmega328P (16MHz AVR)'}</span>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-zinc-400 text-[11px]">Target Flashing COM Port:</label>
+                      <button
+                        onClick={scanSerialPorts}
+                        disabled={isScanningPorts || isFlashing}
+                        className="text-[10px] text-metrology-green hover:underline flex items-center space-x-1"
+                      >
+                        <RotateCw className={`w-2.5 h-2.5 ${isScanningPorts ? 'animate-spin' : ''}`} />
+                        <span>RE-SCAN</span>
+                      </button>
+                    </div>
+                    <select
+                      value={settings.serial_port}
+                      onChange={(e) => handleSaveSettings({ ...settings, serial_port: e.target.value })}
+                      disabled={isFlashing}
+                      className="w-full bg-chassis-850 border border-border rounded p-1.5 text-xs text-metrology-green font-bold focus:border-border-focus focus:outline-none"
+                    >
+                      {availablePorts.length > 0 ? (
+                        availablePorts.map((p, i) => (
+                          <option key={i} value={p.split(' ')[0]}>{p}</option>
+                        ))
+                      ) : (
+                        <option value="COM5">COM5 — Arduino Uno (ATmega328P)</option>
+                      )}
+                    </select>
                   </div>
-                  <div className="flex justify-between items-center text-zinc-400 text-[11px]">
-                    <span>Bootloader Protocol:</span>
-                    <span className="text-metrology-blue">{firmwareStatus?.bootloader || 'Optiboot v4.4 (115200)'}</span>
+
+                  <div>
+                    <label className="text-zinc-400 text-[11px] block mb-1">Firmware Version Target:</label>
+                    <select
+                      value={selectedFirmwareVer}
+                      onChange={(e) => setSelectedFirmwareVer(e.target.value)}
+                      disabled={isFlashing}
+                      className="w-full bg-chassis-850 border border-border rounded p-1.5 text-xs text-metrology-blue font-semibold focus:border-border-focus focus:outline-none"
+                    >
+                      <option value="2.0.0">v2.0.0 — Official Signed Microcode (4.0 Hz I²C Continuous)</option>
+                      <option value="1.2.0">v1.2.0 — Legacy Microcode Baseline</option>
+                    </select>
                   </div>
-                  <div className="flex justify-between items-center text-zinc-400 text-[11px]">
-                    <span>Allocated Port:</span>
-                    <span className="text-metrology-green font-bold">{settings.serial_port}</span>
+
+                  <div className="pt-2 border-t border-border/60 space-y-1.5 text-[11px]">
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Bootloader Protocol:</span>
+                      <span className="text-metrology-blue">{firmwareStatus?.bootloader || 'Optiboot v4.4 (115200)'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Telemetry Channel:</span>
+                      <span className="text-zinc-200">A4/A5 I²C Bus (Runtime Telemetry)</span>
+                    </div>
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Installed Microcode:</span>
+                      <span className="text-white font-bold bg-chassis-800 px-2 py-0.5 rounded">
+                        {firmwareStatus?.installed_version ? `v${firmwareStatus.installed_version}` : 'v1.2.0'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center text-zinc-400 text-[11px]">
-                    <span>Active Sensor:</span>
-                    <span className="text-zinc-200">{firmwareStatus?.sensor || 'BH1750 (0x23 / 0x5C)'}</span>
+                </div>
+
+                {/* Pre-Flashing Connection Requirements */}
+                <div className="p-3 bg-chassis-900/80 rounded-lg border border-border space-y-1.5">
+                  <div className="text-zinc-200 font-semibold text-xs flex items-center space-x-1.5">
+                    <CheckCircle className="w-3.5 h-3.5 text-metrology-green" />
+                    <span>Hardware Connection Requirements:</span>
                   </div>
-                  <div className="flex justify-between items-center text-zinc-400 text-[11px]">
-                    <span>Installed Microcode:</span>
-                    <span className="text-white font-bold bg-chassis-800 px-2 py-0.5 rounded">
-                      {firmwareStatus?.installed_version ? `v${firmwareStatus.installed_version}` : 'v1.2.0'}
-                    </span>
-                  </div>
+                  <ul className="text-[10px] text-zinc-400 space-y-1 list-disc pl-4 leading-relaxed">
+                    <li>Programming occurs over USB virtual COM port (UART STK500v1).</li>
+                    <li>Runtime sensor telemetry runs independently on A4 (SDA) / A5 (SCL) I²C bus.</li>
+                    <li>ATmega328P single-bank 32KB flash: Optiboot bootloader listens for 1.5s after DTR reset.</li>
+                    <li>Ensure USB cable is firmly seated; do not disconnect during write phase.</li>
+                  </ul>
                 </div>
 
                 {/* Permanent No Automatic Flashing Policy */}
@@ -851,6 +930,140 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
                 </div>
               )}
               <div ref={consoleEndRef} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* SUB-TAB 3: APPEARANCE & THEMES                            */}
+      {/* ========================================================= */}
+      {activeSubTab === 'appearance' && (
+        <div className="space-y-4">
+          <div className="bg-chassis-950 border border-border rounded-xl p-5 space-y-4 shadow-instrument">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center space-x-2">
+                <Palette className="w-4 h-4 text-metrology-amber" />
+                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                  Interface Theme &amp; Visual Presentation
+                </span>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-chassis-850 border border-border text-metrology-green font-bold">
+                ACTIVE: {resolvedTheme.toUpperCase()} MODE
+              </span>
+            </div>
+
+            <p className="text-[11px] font-mono text-zinc-400">
+              Select your preferred visual theme for LuxSense Pro. Themes apply consistently across workspaces, 
+              charts, calibration tools, dialogs, and diagnostic terminals.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+              {/* Card 1: Dark Mode */}
+              <button
+                onClick={() => setTheme('dark')}
+                className={`p-4 rounded-xl border text-left transition-all font-mono space-y-3 relative group ${
+                  theme === 'dark'
+                    ? 'bg-chassis-900 border-metrology-green shadow-glow-green'
+                    : 'bg-chassis-950 border-border hover:border-border-focus hover:bg-chassis-900/60'
+                }`}
+              >
+                {theme === 'dark' && (
+                  <div className="absolute top-3 right-3 text-metrology-green">
+                    <CheckCircle className="w-4 h-4" />
+                  </div>
+                )}
+                <div className="w-9 h-9 rounded-lg bg-[#07080A] border border-border flex items-center justify-center text-metrology-green">
+                  <Moon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-white">Graphite Dark (Default)</h3>
+                  <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
+                    Deep matte carbon chassis with vivid optical neon accents. Ideal for low-ambient optical laboratory calibration.
+                  </p>
+                </div>
+                {/* Visual Swatch */}
+                <div className="flex space-x-1.5 pt-1">
+                  <div className="w-5 h-5 rounded bg-[#07080A] border border-zinc-700" title="Chassis 950" />
+                  <div className="w-5 h-5 rounded bg-[#0B0C0E] border border-zinc-700" title="Chassis 900" />
+                  <div className="w-5 h-5 rounded bg-[#14171E] border border-zinc-700" title="Panel 800" />
+                  <div className="w-5 h-5 rounded bg-[#21D789]" title="Photopic Green" />
+                  <div className="w-5 h-5 rounded bg-[#61AFEF]" title="Metrology Blue" />
+                </div>
+              </button>
+
+              {/* Card 2: Light Mode */}
+              <button
+                onClick={() => setTheme('light')}
+                className={`p-4 rounded-xl border text-left transition-all font-mono space-y-3 relative group ${
+                  theme === 'light'
+                    ? 'bg-white border-metrology-green shadow-glow-green text-slate-900'
+                    : 'bg-chassis-950 border-border hover:border-border-focus hover:bg-chassis-900/60'
+                }`}
+              >
+                {theme === 'light' && (
+                  <div className="absolute top-3 right-3 text-metrology-green">
+                    <CheckCircle className="w-4 h-4" />
+                  </div>
+                )}
+                <div className="w-9 h-9 rounded-lg bg-[#F1F5F9] border border-border flex items-center justify-center text-amber-500">
+                  <Sun className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-white">Clean Metrology Light</h3>
+                  <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
+                    High-contrast daylight paper white with slate typography, crisp metric borders, and zero optical glare.
+                  </p>
+                </div>
+                {/* Visual Swatch */}
+                <div className="flex space-x-1.5 pt-1">
+                  <div className="w-5 h-5 rounded bg-[#FFFFFF] border border-slate-300" title="Paper White" />
+                  <div className="w-5 h-5 rounded bg-[#F8FAFC] border border-slate-300" title="Chassis Slate" />
+                  <div className="w-5 h-5 rounded bg-[#E2E8F0] border border-slate-300" title="Panel Slate" />
+                  <div className="w-5 h-5 rounded bg-[#21D789]" title="Photopic Green" />
+                  <div className="w-5 h-5 rounded bg-[#0F172A]" title="Slate Text" />
+                </div>
+              </button>
+
+              {/* Card 3: System Default */}
+              <button
+                onClick={() => setTheme('system')}
+                className={`p-4 rounded-xl border text-left transition-all font-mono space-y-3 relative group ${
+                  theme === 'system'
+                    ? 'bg-chassis-900 border-metrology-green shadow-glow-green'
+                    : 'bg-chassis-950 border-border hover:border-border-focus hover:bg-chassis-900/60'
+                }`}
+              >
+                {theme === 'system' && (
+                  <div className="absolute top-3 right-3 text-metrology-green">
+                    <CheckCircle className="w-4 h-4" />
+                  </div>
+                )}
+                <div className="w-9 h-9 rounded-lg bg-chassis-900 border border-border flex items-center justify-center text-metrology-blue">
+                  <Monitor className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-white">System Synchronized</h3>
+                  <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
+                    Dynamically mirrors your Windows 10 / 11 personalization setting. Seamlessly adapts when Windows switches modes.
+                  </p>
+                </div>
+                <div className="text-[10px] font-mono text-metrology-blue bg-chassis-900 px-2 py-1 rounded border border-border inline-block">
+                  Current Windows State: {resolvedTheme.toUpperCase()}
+                </div>
+              </button>
+            </div>
+
+            {/* Design & Typography Spec Box */}
+            <div className="p-3 bg-chassis-900 rounded-lg border border-border space-y-1.5 text-xs font-mono text-zinc-400">
+              <div className="text-zinc-200 font-bold flex items-center space-x-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-metrology-green" />
+                <span>Persistent Theme Architecture:</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-zinc-400">
+                Your theme preference is safely written to <code className="bg-chassis-950 px-1 rounded text-zinc-300">%APPDATA%\DevPro\LuxSensePro\settings.json</code>.
+                When launching, LuxSense Pro restores your preferred theme instantly without transition flicker.
+              </p>
             </div>
           </div>
         </div>

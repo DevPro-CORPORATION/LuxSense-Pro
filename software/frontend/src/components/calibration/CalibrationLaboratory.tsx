@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
 import { bridge, CalibrationProfile, TelemetryPacket } from '../../bridge/bridgeClient';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   Sliders, 
   Check, 
@@ -8,7 +9,7 @@ import {
   RotateCcw, 
   ShieldAlert, 
   FileText, 
-  Sparkles,
+  Sparkles, 
   Info,
   CheckCircle2
 } from 'lucide-react';
@@ -22,6 +23,8 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
   currentPacket,
   onCalibrationSaved
 }) => {
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
   const [zeroOffset, setZeroOffset] = useState<number>(0.0);
   const [gainMultiplier, setGainMultiplier] = useState<number>(1.0);
   const [profileName, setProfileName] = useState<string>('Standard Factory (BH1750)');
@@ -34,7 +37,7 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
   // Initialize and clean up ECharts instance
   useEffect(() => {
     if (!chartRef.current) return;
-    const inst = echarts.init(chartRef.current, 'dark');
+    const inst = echarts.init(chartRef.current, isLight ? undefined : 'dark');
     chartInstance.current = inst;
     const ro = new ResizeObserver(() => inst.resize());
     ro.observe(chartRef.current);
@@ -44,7 +47,7 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
       inst.dispose();
       chartInstance.current = null;
     };
-  }, []);
+  }, [resolvedTheme]);
 
   // Load existing profile from backend
   useEffect(() => {
@@ -82,7 +85,7 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
         text: 'Optical Transfer Function: f(x) = (x + Offset) × Gain',
         left: 0,
         textStyle: {
-          color: '#DFE2E8',
+          color: isLight ? '#0F172A' : '#DFE2E8',
           fontSize: 12,
           fontFamily: 'JetBrains Mono',
           fontWeight: 600
@@ -90,15 +93,15 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
       },
       tooltip: {
         trigger: 'axis',
-        backgroundColor: '#161920',
-        borderColor: '#2B3240',
-        textStyle: { color: '#DFE2E8', fontFamily: 'JetBrains Mono', fontSize: 11 },
+        backgroundColor: isLight ? '#FFFFFF' : '#161920',
+        borderColor: isLight ? '#CBD5E1' : '#2B3240',
+        textStyle: { color: isLight ? '#0F172A' : '#DFE2E8', fontFamily: 'JetBrains Mono', fontSize: 11 },
         formatter: (params: any) => {
           if (!params || !params[0]) return '';
           return `
             <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">
               <div>Raw Photodiode: <strong>${params[0].value[0]} lx</strong></div>
-              <div style="color: #21D789;">Calibrated Output: <strong>${Number(params[0].value[1]).toFixed(2)} lx</strong></div>
+              <div style="color: ${isLight ? '#059669' : '#21D789'};">Calibrated Output: <strong>${Number(params[0].value[1]).toFixed(2)} lx</strong></div>
             </div>
           `;
         }
@@ -106,7 +109,7 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
       legend: {
         right: 10,
         top: 0,
-        textStyle: { color: '#8C96A8', fontFamily: 'JetBrains Mono', fontSize: 10 }
+        textStyle: { color: isLight ? '#64748B' : '#8C96A8', fontFamily: 'JetBrains Mono', fontSize: 10 }
       },
       grid: {
         top: 40,
@@ -117,18 +120,18 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
       xAxis: {
         type: 'value',
         name: 'Raw (lx)',
-        nameTextStyle: { color: '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 },
-        axisLine: { lineStyle: { color: '#272C38' } },
-        splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.04)' } },
-        axisLabel: { color: '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 }
+        nameTextStyle: { color: isLight ? '#64748B' : '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 },
+        axisLine: { lineStyle: { color: isLight ? '#CBD5E1' : '#272C38' } },
+        splitLine: { lineStyle: { color: isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.04)' } },
+        axisLabel: { color: isLight ? '#64748B' : '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 }
       },
       yAxis: {
         type: 'value',
         name: 'Calibrated (lx)',
-        nameTextStyle: { color: '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 },
+        nameTextStyle: { color: isLight ? '#64748B' : '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 },
         axisLine: { show: false },
-        splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.04)' } },
-        axisLabel: { color: '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 }
+        splitLine: { lineStyle: { color: isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.04)' } },
+        axisLabel: { color: isLight ? '#64748B' : '#6F788A', fontFamily: 'JetBrains Mono', fontSize: 10 }
       },
       series: [
         {
@@ -136,7 +139,7 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
           type: 'line',
           smooth: true,
           data: transferCurve,
-          lineStyle: { color: '#21D789', width: 2.5 },
+          lineStyle: { color: isLight ? '#059669' : '#21D789', width: 2.5 },
           showSymbol: false,
           markPoint: {
             data: [
@@ -153,14 +156,14 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
           name: '1:1 Unity Line',
           type: 'line',
           data: identityCurve,
-          lineStyle: { color: '#4F5B73', type: 'dashed', width: 1.5 },
+          lineStyle: { color: isLight ? '#94A3B8' : '#4F5B73', type: 'dashed', width: 1.5 },
           showSymbol: false
         }
       ]
     };
 
     chartInstance.current.setOption(option);
-  }, [zeroOffset, gainMultiplier, currentPacket]);
+  }, [zeroOffset, gainMultiplier, currentPacket, resolvedTheme]);
 
   // Metrology presets
   const presets = [

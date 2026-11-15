@@ -4,28 +4,29 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         chassis: {
-          950: '#07080A',
-          900: '#0B0C0E',
-          850: '#0F1115',
-          800: '#14171E',
-          750: '#1A1E26',
-          700: '#212630',
+          950: 'var(--bg-chassis-950, #07080A)',
+          900: 'var(--bg-chassis-900, #0B0C0E)',
+          850: 'var(--bg-chassis-850, #0F1115)',
+          800: 'var(--bg-chassis-800, #14171E)',
+          750: 'var(--bg-chassis-750, #1A1E26)',
+          700: 'var(--bg-chassis-700, #212630)',
         },
         surface: {
-          base: '#111317',
-          panel: '#161920',
-          elevated: '#1C212B',
-          overlay: '#222834',
+          base: 'var(--surface-base, #111317)',
+          panel: 'var(--surface-panel, #161920)',
+          elevated: 'var(--surface-elevated, #1C212B)',
+          overlay: 'var(--surface-overlay, #222834)',
         },
         border: {
-          subtle: '#222732',
-          DEFAULT: '#2B3240',
-          focus: '#3D4659',
-          bright: '#4F5B73',
+          subtle: 'var(--border-subtle, #222732)',
+          DEFAULT: 'var(--border-default, #2B3240)',
+          focus: 'var(--border-focus, #3D4659)',
+          bright: 'var(--border-bright, #4F5B73)',
         },
         metrology: {
           green: {

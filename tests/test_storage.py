@@ -40,3 +40,17 @@ def test_measurement_history_db():
     assert len(recent) > 0
     assert recent[0]["packet_id"] == 999
     assert recent[0]["port"] == "COM_TEST"
+
+def test_theme_settings_normalization():
+    s_dark = UserSettings(theme="dark")
+    assert s_dark.theme == "dark"
+
+    s_light = UserSettings(theme="light")
+    assert s_light.theme == "light"
+
+    s_sys = UserSettings(theme="system")
+    assert s_sys.theme == "system"
+
+    # Invalid theme falls back to default "dark"
+    s_invalid = UserSettings(theme="invalid_theme")
+    assert s_invalid.theme == "dark"

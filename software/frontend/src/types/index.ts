@@ -2,7 +2,8 @@ export type WorkspaceTab =
   | 'monitor' 
   | 'scientific'
   | 'analytics' 
-  | 'calibration' 
+  | 'calibration'
+  | 'hardware' 
   | 'settings' 
   | 'techinfo' 
   | 'team';
@@ -31,6 +32,7 @@ export interface UserSettings {
   auto_check_updates: boolean;
   last_update_check: string | null;
   latest_known_version: string;
+  theme?: 'dark' | 'light' | 'system';
 }
 
 export interface TelemetryRecord {

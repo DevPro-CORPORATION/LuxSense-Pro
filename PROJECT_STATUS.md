@@ -270,3 +270,57 @@ Testing conducted directly on physical silicon (Arduino Uno R3 on `COM5` with GY
      - Successful v2.3.0 installation with zero data loss in `%APPDATA%\DevPro\LuxSensePro\`
 5. **Comprehensive Test Suite:**
    - 49 passed, 1 skipped in 2.01s (`pytest tests/ -v`). All unit, metrology, security, flasher, and upgrade lifecycle tests pass.
+
+---
+
+## 14. v2.3.0 Experience, Appearance & Hardware Programming Upgrade Milestone
+
+**Document Version:** 2.3.0-UPGRADE-PRODUCTION  
+**Date:** November 15, 2026  
+**Status:** **100% COMPLETE & VERIFIED — 51/51 TESTS PASSING**
+
+### Implemented Capabilities:
+
+1. **Subsystem POST Startup Experience:**
+   - Restored and elevated the application startup sequence into a genuine four-stage asynchronous subsystem initialization:
+     - **Stage 1: Core IPC Bridge & Settings Engine** (`getAppVersion()`, `getSettings()`)
+     - **Stage 2: Metrology Storage & Calibration Engine** (`getCalibration()`, SQLite persistence tables)
+     - **Stage 3: Physical Hardware & I²C Bus Discovery** (`scanPorts()`, `getHardwareState()`)
+     - **Stage 4: UI Shell & Theme Readiness**
+   - Features real measurable progress percentage (0% to 100%), live diagnostic logs, 4.5-second fail-safe timeout guard, and instant "CONTINUE TO WORKSPACE" bypass.
+
+2. **Appearance Settings & Full Dual Theming:**
+   - Implemented new **Settings → Appearance & Theme** subtab with interactive visual cards for:
+     - **Precision Dark Mode:** Deep `#0B0D11` chassis with high-contrast text.
+     - **Clean Metrology Light Mode:** Paper-white `#FFFFFF` / slate `#F8FAFC` chassis, `#0F172A` typography, and `#CBD5E1` borders.
+     - **System Default:** Automatically synchronizes with the host Windows OS theme preference.
+   - Preferences persisted across restarts in `%APPDATA%\DevPro\LuxSensePro\settings.json`.
+   - Updated Apache ECharts across all workspaces (`InteractiveLuxChart`, `AnalyticsWorkspace`, `CalibrationLaboratory`) to dynamically adapt text, grid, split-line, and tooltip colors to match the active theme without flickering or memory leaks.
+
+3. **Dedicated Hardware Setup Workspace:**
+   - Added a top-level **Hardware Setup** navigation item in the sidebar with genuine engineering schematics.
+   - Features an interactive color-coded wiring schematic connecting Arduino Uno R3 (5V, GND, A4, A5) to GY-30 / BH1750 (VCC, GND, SDA, SCL, ADDR).
+   - Prominently clarifies hardware architecture: **Microcontroller programming occurs strictly over USB UART serial**, while **runtime sensor telemetry flows independently across analog pins A4 (SDA) and A5 (SCL) over the 400 kHz I²C bus**.
+   - Interactive 5-point Pre-Flight Checklist with live "TEST & VERIFY CONNECTION" hardware probe.
+   - Comprehensive troubleshooting guides for `SENSOR ERROR`, `DISCONNECTED`, and STK500v1 sync timeouts.
+
+4. **In-App Microcontroller Firmware Flashing Center:**
+   - Integrated Target Board Architecture selector (`Arduino Uno R3` / `Arduino Nano`).
+   - Integrated Firmware Version Target selector (`v2.0.0 Signed Microcode` / `v1.2.0 Legacy Base`).
+   - Integrated Programming COM Port selector with inline live "RE-SCAN" button.
+   - Enforced non-destructive flashing safeguard: flashing requires explicit operator risk authorization and is never automated.
+   - Full single-bank 32KB flash explanation (Optiboot 1.5s DTR window vs external 6-pin ICSP header recovery).
+
+5. **Update Architecture Streamlining:**
+   - Preserved `updater.exe` strictly as an internal background installation helper, removing confusing download links from the website.
+   - Seamless update experience hosted entirely inside the desktop application's Update Center.
+
+6. **Comprehensive Automated Verification:**
+   - **Full Test Suite:** 51 passed, 0 failed in 2.27s (`pytest tests/ -v`).
+   - **Packaging & Delivery:** Rebuilt `dist/LuxSensePro.exe`, Inno Setup installer `LuxSense-Pro-Setup-v2.3.0.exe`, and portable ZIP `LuxSense-Pro-v2.3.0-portable.zip`.
+   - **Evidence Screenshots Captured:**
+     - `docs/evidence/ui_v230_startup_sequence.png` (POST initialization diagnostics)
+     - `docs/evidence/ui_v230_hardware_setup.png` (Wiring schematic & pre-flight checklist)
+     - `docs/evidence/ui_v230_appearance_settings.png` (Settings Appearance tab)
+     - `docs/evidence/ui_v230_firmware_update_center.png` (Firmware Update Center)
+     - `docs/evidence/ui_v230_light_mode.png` (Clean Metrology Light Mode in full workstation)

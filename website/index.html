@@ -106,7 +106,7 @@
               <span class="dot yellow"></span>
               <span class="dot green"></span>
             </div>
-            <span class="window-title">LuxSense Pro v2.1.0 — Optical Radiometry Workstation</span>
+            <span class="window-title">LuxSense Pro v2.3.0 — Optical Radiometry Workstation</span>
             <span class="window-status-pill">● LIVE MEASUREMENT</span>
           </div>
           <img src="assets/luxsense_ui_live.png" alt="LuxSense Pro Live Telemetry Interface" class="hero-image">
@@ -219,20 +219,38 @@
       <div class="screenshots-grid">
         <div class="screenshot-card">
           <div class="screenshot-header">
-            <h4>Application Startup & Subsystem POST</h4>
-            <span class="tag">BOOTSTRAP SEQUENCE</span>
+            <h4>Hardware Setup &amp; Wiring Schematic</h4>
+            <span class="tag">DEDICATED WORKSPACE</span>
           </div>
-          <img src="assets/luxsense_ui_screenshot.png" alt="LuxSense Pro Startup POST" class="screenshot-img">
-          <p class="screenshot-desc">Automated self-diagnostics verifying ATmega328P core clock, BH1750 I²C bus acknowledgment @ 0x23, cryptographic sync, and SQLite integrity.</p>
+          <img src="assets/ui_v230_hardware_setup.png" alt="LuxSense Pro Dedicated Hardware Setup" class="screenshot-img">
+          <p class="screenshot-desc">Complete interactive wiring schematic connecting Arduino Uno R3 to GY-30 (BH1750), 5-point pre-flight checklist, and architecture distinction between USB programming and I²C telemetry.</p>
         </div>
 
         <div class="screenshot-card">
           <div class="screenshot-header">
-            <h4>Live Radiometry & Photodiode Oscillogram</h4>
-            <span class="tag">REAL TELEMETRY (COM5)</span>
+            <h4>Clean Metrology Light &amp; Appearance Settings</h4>
+            <span class="tag">DUAL PALETTE THEMING</span>
           </div>
-          <img src="assets/luxsense_ui_live.png" alt="LuxSense Pro Live Workspace" class="screenshot-img">
-          <p class="screenshot-desc">Continuous 4.0 Hz photodiode stream with peak hold, imperial foot-candles, spectral irradiance estimation, and dynamic environment categorization.</p>
+          <img src="assets/ui_v230_light_mode.png" alt="LuxSense Pro Clean Metrology Light Mode" class="screenshot-img">
+          <p class="screenshot-desc">High-contrast Clean Metrology Light mode, Precision Dark mode, and Windows System Default with instantaneous live preview and persistent preferences.</p>
+        </div>
+
+        <div class="screenshot-card">
+          <div class="screenshot-header">
+            <h4>Subsystem POST Diagnostic Sequence</h4>
+            <span class="tag">BOOTSTRAP SEQUENCE</span>
+          </div>
+          <img src="assets/ui_v230_startup_sequence.png" alt="LuxSense Pro Startup POST Sequence" class="screenshot-img">
+          <p class="screenshot-desc">Real four-stage asynchronous subsystem initialization verifying IPC bridge, metrology tables, hardware discovery, and UI readiness with measurable progress.</p>
+        </div>
+
+        <div class="screenshot-card">
+          <div class="screenshot-header">
+            <h4>In-App Microcontroller Firmware Flashing</h4>
+            <span class="tag">CRYPTOGRAPHICALLY SIGNED</span>
+          </div>
+          <img src="assets/ui_v230_firmware_update_center.png" alt="LuxSense Pro In-App Firmware Update Center" class="screenshot-img">
+          <p class="screenshot-desc">Integrated board and port selectors, Ed25519 signature and SHA-256 verification, single-bank 32KB Optiboot safeguard, and real-time STK500v1 console diagnostics.</p>
         </div>
       </div>
     </div>
@@ -308,10 +326,10 @@
         <div class="download-card featured">
           <div class="download-badge">RECOMMENDED</div>
           <h3 class="download-title">Windows Production Setup</h3>
-          <p class="download-subtitle">Self-contained Inno Setup installer with automatic Start Menu icons, uninstaller, and update support.</p>
+          <p class="download-subtitle">Self-contained Inno Setup installer with automatic Start Menu icons, uninstaller, and seamless in-app updates.</p>
           <div class="download-meta">
             <span><strong>Version:</strong> v2.3.0 Stable</span>
-            <span><strong>Size:</strong> 230.3 MB</span>
+            <span><strong>Size:</strong> ~230 MB</span>
             <span><strong>OS:</strong> Windows 10 & 11 (64-bit)</span>
           </div>
           <a href="https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.0/LuxSense-Pro-Setup-v2.3.0.exe" class="btn btn-primary full-width">
@@ -319,7 +337,7 @@
           </a>
           <div class="checksum-box">
             <span class="checksum-label">SHA-256:</span>
-            <code class="checksum-hash" title="Click to copy">ec43959563434ba3ab008a1277e4ff0136e6f876e7370733122d79a7129fc6cf</code>
+            <code class="checksum-hash" title="Click to copy">956dded907c9e5a720856ca95fd655ff19ad1a9a33d8f527386959971ac20d3e</code>
           </div>
         </div>
 
@@ -329,7 +347,7 @@
           <p class="download-subtitle">Run directly without system installation. Perfect for USB field drives and restricted enterprise environments.</p>
           <div class="download-meta">
             <span><strong>Version:</strong> v2.3.0 Stable</span>
-            <span><strong>Size:</strong> 237.3 MB</span>
+            <span><strong>Size:</strong> ~237 MB</span>
             <span><strong>OS:</strong> Windows 10 & 11 (64-bit)</span>
           </div>
           <a href="https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.0/LuxSense-Pro-v2.3.0-portable.zip" class="btn btn-secondary full-width">
@@ -337,25 +355,7 @@
           </a>
           <div class="checksum-box">
             <span class="checksum-label">SHA-256:</span>
-            <code class="checksum-hash" title="Click to copy">992f5741ef8d36cca9d49136411f5549a53cb16963d9ff3fa65f55a3c63645f5</code>
-          </div>
-        </div>
-
-        <!-- Standalone Bootstrapper -->
-        <div class="download-card">
-          <h3 class="download-title">Standalone Updater Bootstrapper</h3>
-          <p class="download-subtitle">Dedicated out-of-process file replacement and automatic rollback utility powering the in-app Update Center.</p>
-          <div class="download-meta">
-            <span><strong>Version:</strong> v2.3.0</span>
-            <span><strong>Size:</strong> 9.4 MB</span>
-            <span><strong>Binary:</strong> updater.exe</span>
-          </div>
-          <a href="https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.0/updater.exe" class="btn btn-secondary full-width">
-            Download Bootstrapper
-          </a>
-          <div class="checksum-box">
-            <span class="checksum-label">SHA-256:</span>
-            <code class="checksum-hash" title="Click to copy">071aee20e59eeb5188b04235f5aaf9e6fb4089c58fdbb2ee3977707ce7a77aa4</code>
+            <code class="checksum-hash" title="Click to copy">837d44681a2a741297184aa809932ac06c6fbfc380dbb3128dcc59fbf3bc0bf2</code>
           </div>
         </div>
 

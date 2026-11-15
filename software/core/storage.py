@@ -43,7 +43,11 @@ class UserSettings:
     latest_known_version: str = APP_VERSION
     postponed_version: Optional[str] = None
     telemetry_logging: bool = True
-    theme: str = "graphite_dark"
+    theme: str = "dark"                  # "dark", "light", or "system"
+
+    def __post_init__(self):
+        if self.theme not in ("dark", "light", "system"):
+            self.theme = "dark"
 
     @classmethod
     def load(cls) -> "UserSettings":
@@ -52,6 +56,11 @@ class UserSettings:
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                # Normalize legacy theme names
+                if data.get("theme") in ("graphite_dark", "night"):
+                    data["theme"] = "dark"
+                elif data.get("theme") not in ("dark", "light", "system"):
+                    data["theme"] = "dark"
                 return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
             except Exception as e:
                 print(f"[Storage] Warning: Failed to load settings ({e}), using defaults.")

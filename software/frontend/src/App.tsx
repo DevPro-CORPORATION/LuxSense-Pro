@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WorkspaceTab, TelemetryPacket, CalibrationProfile } from './types';
 import { bridge } from './bridge/bridgeClient';
+import { ThemeProvider } from './context/ThemeContext';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { StartupPOST } from './components/common/StartupPOST';
@@ -9,6 +10,7 @@ import { LiveMonitorWorkspace } from './components/monitor/LiveMonitorWorkspace'
 import { ScientificWorkspace } from './components/scientific/ScientificWorkspace';
 import { AnalyticsWorkspace } from './components/analytics/AnalyticsWorkspace';
 import { CalibrationLaboratory } from './components/calibration/CalibrationLaboratory';
+import { HardwareSetupWorkspace } from './components/hardware/HardwareSetupWorkspace';
 import { SettingsWorkspace } from './components/settings/SettingsWorkspace';
 import { TechnicalInfoWorkspace } from './components/techinfo/TechnicalInfoWorkspace';
 import { TeamWorkspace } from './components/team/TeamWorkspace';
@@ -73,85 +75,95 @@ export const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-chassis-900 text-[#DFE2E8] font-sans overflow-hidden select-none">
-      {/* Cinematic Startup POST sequence */}
-      <AnimatePresence>
-        {showStartup && (
-          <StartupPOST onComplete={() => setShowStartup(false)} />
-        )}
-      </AnimatePresence>
+    <ThemeProvider>
+      <div className="flex flex-col h-screen w-screen bg-chassis-900 text-[#DFE2E8] font-sans overflow-hidden select-none">
+        {/* Cinematic Startup POST sequence */}
+        <AnimatePresence>
+          {showStartup && (
+            <StartupPOST onComplete={() => setShowStartup(false)} />
+          )}
+        </AnimatePresence>
 
-      {/* Main Instrument Shell */}
-      <Header 
-        currentPacket={currentPacket}
-        statusMessage={statusMessage}
-        statusColor={statusColor}
-        hardwareState={hardwareState}
-        isConnected={isConnected}
-      />
-
-      <div className="flex flex-1 h-[calc(100vh-3rem)] overflow-hidden">
-        {/* Navigation Sidebar */}
-        <Sidebar 
-          currentTab={currentTab} 
-          onSelectTab={setCurrentTab}
-          updateAvailable={updateAvailable}
+        {/* Main Instrument Shell */}
+        <Header 
+          currentPacket={currentPacket}
+          statusMessage={statusMessage}
+          statusColor={statusColor}
+          hardwareState={hardwareState}
+          isConnected={isConnected}
         />
 
-        {/* Dynamic Workspace Container */}
-        <main className="flex-1 flex flex-col h-full overflow-hidden bg-chassis-900 relative">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentTab}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="w-full h-full flex flex-col overflow-hidden"
-            >
-              {currentTab === 'monitor' && (
-                <LiveMonitorWorkspace 
-                  packet={currentPacket} 
-                  calibration={calibration} 
-                  hardwareState={hardwareState}
-                />
-              )}
+        <div className="flex flex-1 h-[calc(100vh-3rem)] overflow-hidden">
+          {/* Navigation Sidebar */}
+          <Sidebar 
+            currentTab={currentTab} 
+            onSelectTab={setCurrentTab}
+            updateAvailable={updateAvailable}
+          />
 
-              {currentTab === 'scientific' && (
-                <ScientificWorkspace 
-                  currentPacket={currentPacket}
-                />
-              )}
+          {/* Dynamic Workspace Container */}
+          <main className="flex-1 flex flex-col h-full overflow-hidden bg-chassis-900 relative">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentTab}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                className="w-full h-full flex flex-col overflow-hidden"
+              >
+                {currentTab === 'monitor' && (
+                  <LiveMonitorWorkspace 
+                    packet={currentPacket} 
+                    calibration={calibration} 
+                    hardwareState={hardwareState}
+                  />
+                )}
 
-              {currentTab === 'analytics' && (
-                <AnalyticsWorkspace />
-              )}
+                {currentTab === 'scientific' && (
+                  <ScientificWorkspace 
+                    currentPacket={currentPacket}
+                  />
+                )}
 
-              {currentTab === 'calibration' && (
-                <CalibrationLaboratory 
-                  currentPacket={currentPacket}
-                  onCalibrationSaved={(newCal) => setCalibration(newCal)}
-                />
-              )}
+                {currentTab === 'analytics' && (
+                  <AnalyticsWorkspace />
+                )}
 
-              {currentTab === 'settings' && (
-                <SettingsWorkspace 
-                  onUpdateAvailableChange={(avail) => setUpdateAvailable(avail)}
-                />
-              )}
+                {currentTab === 'calibration' && (
+                  <CalibrationLaboratory 
+                    currentPacket={currentPacket}
+                    onCalibrationSaved={(newCal) => setCalibration(newCal)}
+                  />
+                )}
 
-              {currentTab === 'techinfo' && (
-                <TechnicalInfoWorkspace />
-              )}
+                {currentTab === 'hardware' && (
+                  <HardwareSetupWorkspace 
+                    hardwareState={hardwareState}
+                    isConnected={isConnected}
+                    onNavigateToTab={setCurrentTab}
+                  />
+                )}
 
-              {currentTab === 'team' && (
-                <TeamWorkspace />
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+                {currentTab === 'settings' && (
+                  <SettingsWorkspace 
+                    onUpdateAvailableChange={(avail) => setUpdateAvailable(avail)}
+                  />
+                )}
+
+                {currentTab === 'techinfo' && (
+                  <TechnicalInfoWorkspace />
+                )}
+
+                {currentTab === 'team' && (
+                  <TeamWorkspace />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+        </div>
       </div>
-    </div>
+    </ThemeProvider>
   );
 };
 export default App;

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import * as echarts from 'echarts';
+import { useTheme } from '../../context/ThemeContext';
 
 interface DataPoint {
   time: string;
@@ -29,6 +30,8 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
   timeWindowSeconds = 30,
   isPaused = false
 }, ref) => {
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
   const dataSeries = useRef<DataPoint[]>([]);
@@ -53,7 +56,7 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
   useEffect(() => {
     if (!chartRef.current) return;
 
-    const chart = echarts.init(chartRef.current, 'dark', {
+    const chart = echarts.init(chartRef.current, isLight ? undefined : 'dark', {
       renderer: 'canvas',
     });
     chartInstance.current = chart;
@@ -66,17 +69,17 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
         axisPointer: {
           type: 'cross',
           lineStyle: {
-            color: '#4F5B73',
+            color: isLight ? '#94A3B8' : '#4F5B73',
             type: 'dashed'
           },
           crossStyle: {
             color: '#21D789'
           }
         },
-        backgroundColor: '#161920',
-        borderColor: '#2B3240',
+        backgroundColor: isLight ? '#FFFFFF' : '#161920',
+        borderColor: isLight ? '#CBD5E1' : '#2B3240',
         textStyle: {
-          color: '#DFE2E8',
+          color: isLight ? '#0F172A' : '#DFE2E8',
           fontFamily: 'JetBrains Mono',
           fontSize: 11
         },
@@ -85,9 +88,9 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
           const pt = params[0];
           return `
             <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">
-              <div style="color: #8C96A8; margin-bottom: 4px;">T: ${pt.name}</div>
-              <div style="color: #21D789; font-weight: bold;">CALIBRATED: ${Number(pt.value).toFixed(2)} lx</div>
-              ${params[1] ? `<div style="color: #61AFEF;">RAW SENSOR: ${Number(params[1].value).toFixed(2)} lx</div>` : ''}
+              <div style="color: ${isLight ? '#64748B' : '#8C96A8'}; margin-bottom: 4px;">T: ${pt.name}</div>
+              <div style="color: ${isLight ? '#059669' : '#21D789'}; font-weight: bold;">CALIBRATED: ${Number(pt.value).toFixed(2)} lx</div>
+              ${params[1] ? `<div style="color: ${isLight ? '#2563EB' : '#61AFEF'};">RAW SENSOR: ${Number(params[1].value).toFixed(2)} lx</div>` : ''}
             </div>
           `;
         }
@@ -101,10 +104,10 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: [],
-        axisLine: { lineStyle: { color: '#272C38' } },
+        data: dataSeries.current.map(d => d.time),
+        axisLine: { lineStyle: { color: isLight ? '#CBD5E1' : '#272C38' } },
         axisLabel: {
-          color: '#6F788A',
+          color: isLight ? '#64748B' : '#6F788A',
           fontFamily: 'JetBrains Mono',
           fontSize: 10,
           interval: 'auto',
@@ -113,7 +116,7 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
         splitLine: {
           show: true,
           lineStyle: {
-            color: 'rgba(255, 255, 255, 0.03)',
+            color: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.03)',
             type: 'dashed'
           }
         }
@@ -124,14 +127,14 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
-          color: '#6F788A',
+          color: isLight ? '#64748B' : '#6F788A',
           fontFamily: 'JetBrains Mono',
           fontSize: 10,
           formatter: '{value} lx'
         },
         splitLine: {
           lineStyle: {
-            color: 'rgba(255, 255, 255, 0.04)',
+            color: isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.04)',
             type: 'solid'
           }
         }
@@ -144,19 +147,19 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
           showSymbol: false,
           sampling: 'lttb',
           lineStyle: {
-            color: '#21D789',
+            color: isLight ? '#059669' : '#21D789',
             width: 2,
-            shadowColor: 'rgba(33, 215, 137, 0.35)',
+            shadowColor: isLight ? 'rgba(5, 150, 105, 0.25)' : 'rgba(33, 215, 137, 0.35)',
             shadowBlur: 8
           },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(33, 215, 137, 0.22)' },
-              { offset: 0.8, color: 'rgba(33, 215, 137, 0.02)' },
+              { offset: 0, color: isLight ? 'rgba(5, 150, 105, 0.20)' : 'rgba(33, 215, 137, 0.22)' },
+              { offset: 0.8, color: isLight ? 'rgba(5, 150, 105, 0.03)' : 'rgba(33, 215, 137, 0.02)' },
               { offset: 1, color: 'transparent' }
             ])
           },
-          data: []
+          data: dataSeries.current.map(d => d.lux)
         },
         {
           name: 'Raw Sensor',
@@ -164,12 +167,12 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
           smooth: 0.2,
           showSymbol: false,
           lineStyle: {
-            color: '#61AFEF',
+            color: isLight ? '#2563EB' : '#61AFEF',
             width: 1,
             type: 'dotted',
             opacity: 0.6
           },
-          data: []
+          data: dataSeries.current.map(d => d.raw)
         }
       ]
     };
@@ -186,7 +189,7 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
       chart.dispose();
       chartInstance.current = null;
     };
-  }, []);
+  }, [resolvedTheme]);
 
   // Append incoming data
   useEffect(() => {

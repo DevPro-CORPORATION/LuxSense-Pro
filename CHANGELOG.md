@@ -6,6 +6,12 @@ Version formatting follows [Semantic Versioning](https://semver.org/).
 ## [2.3.0] - 2026-11-15
 
 ### Added
+- **Dedicated Hardware Setup Workspace:** Complete interactive schematic connecting Arduino Uno R3 to GY-30 (BH1750), 5-point pre-flight checklist, engineering electrical specifications, and architecture clarification separating USB programming from I²C runtime telemetry.
+- **Appearance Settings & Full Dual Theming:** Complete high-contrast Clean Metrology Light mode, Precision Dark mode, and Windows System Default with live preview cards, persistent configuration in `%APPDATA%`, and automatic OS theme synchronization.
+- **Apache ECharts Theme Adaptation:** Seamless dynamic palette switching for dual-axis optical transfer curves, frequency distribution histograms, and real-time photodiode streaming charts without flicker.
+- **Subsystem POST Startup Sequence:** Genuine four-stage asynchronous subsystem initialization verifying IPC bridge, metrology tables, hardware discovery, and UI readiness with measurable progress and fail-safe timeout bypass.
+- **Microcontroller Hardware Programming Controls:** Integrated board selector (Arduino Uno R3 / ATmega328P), firmware target selector (v2.0.0 official signed microcode vs v1.2.0 legacy), and dedicated COM port scan and selector directly inside the Firmware Update Center.
+- **Seamless In-App Update Flow:** Maintained `updater.exe` strictly as an internal background installation helper, removing external website download confusion while preserving pre-update backup, cryptographic verification, and rollback recovery.
 - **Unified Software & Physical Firmware Update Architecture:** Complete update architecture bridging the high-level Windows application and physical Arduino Uno (ATmega328P) microcontroller firmware.
 - **Ed25519 Cryptographic Microcode Signing:** Asymmetric signature verification for all microcontroller payloads with embedded public key and SHA-256 binary validation.
 - **Dedicated ATmega328P Firmware Update Center:** Embedded sub-tab in Settings with real-time MCU status, 32 KB flash memory gauge, signature verification badges, and live diagnostic terminal.
