@@ -3,6 +3,20 @@
 All notable changes to LuxSense Pro are documented in this file.
 Version formatting follows [Semantic Versioning](https://semver.org/).
 
+## [2.3.2] - 2026-11-15
+
+### Added
+- **JetBrains-Style Native Update Progress Window:** Introduced a dedicated native PySide6 update progress window (`UpdateProgressWindow`) in `updater/bootstrapper.py`. The window remains visible on screen while the main application terminates, reporting real elapsed time, version transition badge (e.g. `v2.3.1 ➔ v2.3.2`), and 7 deterministic installation stages (package verification, parent termination, directory backup, silent installation, installation verification, temporary file cleanup, and application relaunch).
+- **Theme-Aware Updater GUI:** Passed active desktop theme (`--theme dark` or `--theme light`) to `updater.exe` command-line flags, matching the user's selected UI theme (Graphite Dark / Clean Metrology Light).
+- **Global Hardware & Subsystem Notification System:** Created `<NotificationToastContainer />` with persistent status transitions (`SUCCESS`, `WARNING`, `FAILED`, `INFO`) and instant visual alerts across all workspaces.
+- **Decoupled MCU vs. I²C Sensor Telemetry:** Separated Arduino Uno serial connectivity from GY-30 (BH1750) I²C sensor state. Disconnected or missing sensors now report `DISCONNECTED` (amber) without entering aggressive 2-second serial reconnect loops, while maintaining active MCU connection and polling in the background.
+- **Dual Hardware Status Badges:** Enhanced top header with independent MCU badge (`UNO (COM5)` / `PROBING...` / `OFFLINE`) and Photometer Sensor badge (`BH1750 (0x23)` / `DISCONNECTED` / `OFFLINE`).
+
+### Fixed
+- **Firmware Flash Notification Delivery:** Connected `bridge.onFirmwareFlashCompleted` to the top-level application notification bus and Settings Workspace, ensuring operators receive instant floating banners upon flash success, post-flash warning, or failure regardless of active view.
+- **UI Progress Bar Flickering:** Stabilized CSS transitions on download and firmware flashing progress bars using monotonic value clamping and `transition-[width] duration-150`, eliminating erratic visual jitter during high-frequency telemetry updates.
+- **Update Lifecycle Test Assertions:** Resolved test suite semver comparisons and lifecycle fixtures for v2.3.2 verification.
+
 ## [2.3.1] - 2026-11-15
 
 ### Added

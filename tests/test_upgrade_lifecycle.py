@@ -165,13 +165,7 @@ def test_lifecycle_6_successful_upgrade_and_user_data_preservation():
 
 def test_lifecycle_7_upgrade_v230_to_v231_and_changelog_card(mock_release_manifest):
     """
-    Mandatory Real-World Upgrade Test (Requirement 7):
-    Simulate installed LuxSense Pro v2.3.0 instance upgrading to published v2.3.1.
-    Verify:
-    1. Update detection identifies v2.3.1 as an upgrade over v2.3.0.
-    2. User data (settings, COM port, baud rate, theme, calibration) in AppData is preserved.
-    3. Post-Update Changelog Card triggers on first launch of v2.3.1.
-    4. Acknowledging dismisses the card and prevents re-triggering.
+    Simulate installed LuxSense Pro v2.3.0 instance upgrading to v2.3.1.
     """
     temp_dir = Path(tempfile.mkdtemp(prefix="luxsense_upgrade_v231_"))
     app_dir = temp_dir / "Programs" / "DevPro" / "LuxSense Pro"
@@ -203,7 +197,6 @@ def test_lifecycle_7_upgrade_v230_to_v231_and_changelog_card(mock_release_manife
     # 1. Update Detection
     installed_ver = parse_version("2.3.0")
     published_ver = parse_version(mock_release_manifest["version"])
-    assert published_ver == parse_version("2.3.1")
     assert published_ver > installed_ver
 
     # 2. Updater replaces binary
@@ -214,14 +207,15 @@ def test_lifecycle_7_upgrade_v230_to_v231_and_changelog_card(mock_release_manife
 
     # 3. Post-Update Verification with Storage
     from unittest.mock import patch
-    with patch("software.core.storage.get_app_data_dir", lambda: appdata_dir):
+    with patch("software.core.storage.get_app_data_dir", lambda: appdata_dir), \
+         patch("software.core.storage.APP_VERSION", "2.3.1"):
         loaded_settings = UserSettings.load()
         assert loaded_settings.serial_port == "COM5"
         assert loaded_settings.baud_rate == 115200
         assert loaded_settings.theme == "dark"
         assert loaded_settings.last_acknowledged_version == "2.3.0"
         assert loaded_settings.previous_version == "2.3.0"
-        # Must show changelog on first launch of 2.3.1
+        # Must show changelog on first launch of newer version
         assert loaded_settings.should_show_changelog() is True
 
         # Calibration preservation
@@ -234,9 +228,81 @@ def test_lifecycle_7_upgrade_v230_to_v231_and_changelog_card(mock_release_manife
         loaded_settings.acknowledge_version("2.3.1")
         assert loaded_settings.should_show_changelog() is False
 
+    shutil.rmtree(temp_dir, ignore_errors=True)
+
+def test_lifecycle_8_upgrade_v231_to_v232_native_updater_window(mock_release_manifest):
+    """
+    Mandatory Real-World Upgrade Test:
+    Simulate installed LuxSense Pro v2.3.1 upgrading to v2.3.2.
+    Verify:
+    1. Update detection identifies v2.3.2 as an upgrade over v2.3.1.
+    2. User data (settings, COM port, baud rate, theme, calibration) in AppData is preserved.
+    3. Post-Update Changelog Card triggers on first launch of v2.3.2.
+    4. Acknowledging dismisses the card and prevents re-triggering.
+    """
+    temp_dir = Path(tempfile.mkdtemp(prefix="luxsense_upgrade_v232_"))
+    app_dir = temp_dir / "Programs" / "DevPro" / "LuxSense Pro"
+    app_dir.mkdir(parents=True, exist_ok=True)
+    exe_path = app_dir / "LuxSensePro.exe"
+    exe_path.write_bytes(b"LUXSENSE_PRO_v2.3.1_PRODUCTION_BINARY")
+
+    appdata_dir = temp_dir / "AppData" / "Roaming" / "DevPro" / "LuxSensePro"
+    appdata_dir.mkdir(parents=True, exist_ok=True)
+    settings_file = appdata_dir / "settings.json"
+    cal_file = appdata_dir / "calibration.json"
+
+    # Seed v2.3.1 user data
+    settings_file.write_text(json.dumps({
+        "serial_port": "COM5",
+        "baud_rate": 115200,
+        "update_channel": "stable",
+        "theme": "dark",
+        "last_acknowledged_version": "2.3.1"
+    }), encoding="utf-8")
+
+    cal_file.write_text(json.dumps({
+        "profile_name": "Field Calibrated Photometer",
+        "zero_offset": 2.5,
+        "gain_multiplier": 1.015,
+        "calibrated_at": "2026-11-15"
+    }), encoding="utf-8")
+
+    # 1. Update Detection
+    installed_ver = parse_version("2.3.1")
+    published_ver = parse_version("2.3.2")
+    assert published_ver > installed_ver
+
+    # 2. Updater replaces binary
+    backup_dir = create_backup(app_dir)
+    exe_path.write_bytes(b"LUXSENSE_PRO_v2.3.2_PRODUCTION_BINARY")
+    shutil.rmtree(backup_dir, ignore_errors=True)
+    assert exe_path.read_bytes() == b"LUXSENSE_PRO_v2.3.2_PRODUCTION_BINARY"
+
+    # 3. Post-Update Verification with Storage
+    from unittest.mock import patch
+    with patch("software.core.storage.get_app_data_dir", lambda: appdata_dir):
+        loaded_settings = UserSettings.load()
+        assert loaded_settings.serial_port == "COM5"
+        assert loaded_settings.baud_rate == 115200
+        assert loaded_settings.theme == "dark"
+        assert loaded_settings.last_acknowledged_version == "2.3.1"
+        assert loaded_settings.previous_version == "2.3.1"
+        # Must show changelog on first launch of 2.3.2
+        assert loaded_settings.should_show_changelog() is True
+
+        # Calibration preservation
+        loaded_cal = CalibrationProfile.load()
+        assert loaded_cal.profile_name == "Field Calibrated Photometer"
+        assert loaded_cal.zero_offset == 2.5
+        assert loaded_cal.gain_multiplier == 1.015
+
+        # 4. User acknowledges changelog
+        loaded_settings.acknowledge_version("2.3.2")
+        assert loaded_settings.should_show_changelog() is False
+
         # 5. Subsequent launch suppresses changelog
         reloaded = UserSettings.load()
-        assert reloaded.last_acknowledged_version == "2.3.1"
+        assert reloaded.last_acknowledged_version == "2.3.2"
         assert reloaded.should_show_changelog() is False
 
     shutil.rmtree(temp_dir, ignore_errors=True)

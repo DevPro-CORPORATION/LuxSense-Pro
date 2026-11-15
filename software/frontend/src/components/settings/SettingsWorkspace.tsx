@@ -446,8 +446,8 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
                   </div>
                   <div className="h-2 w-full bg-chassis-800 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-metrology-green transition-all duration-200"
-                      style={{ width: `${downloadProgress.percent}%` }}
+                      className="h-full bg-metrology-green transition-[width] duration-150 ease-out will-change-[width]"
+                      style={{ width: `${Math.max(0, Math.min(100, downloadProgress.percent))}%` }}
                     />
                   </div>
                   <div className="flex justify-between text-[10px] font-mono text-zinc-400">
@@ -934,8 +934,8 @@ export const SettingsWorkspace: React.FC<SettingsWorkspaceProps> = ({
               <div className="space-y-1">
                 <div className="h-2 w-full bg-chassis-800 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-metrology-green transition-all duration-200"
-                    style={{ width: `${firmwareProgress?.percent || 15}%` }}
+                    className="h-full bg-metrology-green transition-[width] duration-150 ease-out will-change-[width]"
+                    style={{ width: `${Math.max(5, Math.min(100, firmwareProgress?.percent || 5))}%` }}
                   />
                 </div>
               </div>

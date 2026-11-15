@@ -1,41 +1,41 @@
 {
-  "version": "2.3.1",
-  "tag_name": "v2.3.1",
+  "version": "2.3.2",
+  "tag_name": "v2.3.2",
   "channel": "stable",
-  "release_name": "LuxSense Pro v2.3.1 \u2014 Unified Software & Firmware Update Architecture",
-  "published_at": "2026-11-15T15:45:00Z",
+  "release_name": "LuxSense Pro v2.3.2 \u2014 Production Reliability, UI/UX Stabilization & Premium Update Experience",
+  "published_at": "2026-11-15T21:00:00Z",
   "prerelease": false,
-  "release_notes": "Official release of LuxSense Pro v2.3.1 featuring complete production bug hunt resolutions, enhanced Light Mode contrast and dynamic chart theming, dual Uno/Nano AVR flashing support, directory collision-safe updater rollback, and validated hardware integration.",
+  "release_notes": "Official release of LuxSense Pro v2.3.2 featuring dedicated native JetBrains-style update progress window, independent Arduino/sensor status monitoring, reliable 3-state firmware flashing notifications, stabilized progress indicators, and complete rollback safeguards.",
   "assets": {
-    "LuxSense-Pro-Setup-v2.3.1.exe": {
-      "filename": "LuxSense-Pro-Setup-v2.3.1.exe",
-      "sha256": "88dfecb8f084e76b590728750a2003d84b2c5d3cca832f55a33fea2d2667759d",
-      "size": 230782131,
-      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.1/LuxSense-Pro-Setup-v2.3.1.exe"
+    "LuxSense-Pro-Setup-v2.3.2.exe": {
+      "filename": "LuxSense-Pro-Setup-v2.3.2.exe",
+      "sha256": "5e635b56899b0c57003a489ebbcdb54402fd1748632ba5e5e4995ca5dd45a9b5",
+      "size": 268414517,
+      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.2/LuxSense-Pro-Setup-v2.3.2.exe"
     },
-    "LuxSense-Pro-v2.3.1-portable.zip": {
-      "filename": "LuxSense-Pro-v2.3.1-portable.zip",
-      "sha256": "a4fa36a6711c14b4582f9606ac9ddeb9b8cf1a978cfb9062c8d26030e520fa59",
-      "size": 237315874,
-      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.1/LuxSense-Pro-v2.3.1-portable.zip"
+    "LuxSense-Pro-v2.3.2-portable.zip": {
+      "filename": "LuxSense-Pro-v2.3.2-portable.zip",
+      "sha256": "97866b28415ebe0c15a42f113c00b23903035ef7e223aba88d555013403ab73e",
+      "size": 275590845,
+      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.2/LuxSense-Pro-v2.3.2-portable.zip"
     },
     "updater.exe": {
       "filename": "updater.exe",
-      "sha256": "e80dce2a24409a4972750e3549fbdd14578252dcdbd4e168b748ebb8e51774da",
-      "size": 9398318,
-      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.1/updater.exe"
+      "sha256": "9dd08b4103c1f2e67d36ee73ead5daa18f757690cee22be508e1172af5da16b1",
+      "size": 47788164,
+      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.2/updater.exe"
     },
     "firmware-manifest.json": {
       "filename": "firmware-manifest.json",
-      "sha256": "694b0365ee0d1c4870bd6ce98005ce00da26b21f2d4eccbd47b1cb002751d55c",
+      "sha256": "abf12a012d8d17d71c6cc8cdc8b57a6a60131184d594a4bc5b7ff845637d16c2",
       "size": 906,
-      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.1/firmware-manifest.json"
+      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.2/firmware-manifest.json"
     },
     "LuxSense_Arduino.ino.hex": {
       "filename": "LuxSense_Arduino.ino.hex",
       "sha256": "0d252ba9d2fbe909055ffece802cd815879001916b41587d278c33ba19cc5c23",
       "size": 31567,
-      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.1/LuxSense_Arduino.ino.hex"
+      "url": "https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.3.2/LuxSense_Arduino.ino.hex"
     }
   }
 }

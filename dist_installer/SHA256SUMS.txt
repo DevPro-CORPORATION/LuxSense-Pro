@@ -1,6 +1,6 @@
 # LuxSense Pro Release Checksums (SHA-256)
-88dfecb8f084e76b590728750a2003d84b2c5d3cca832f55a33fea2d2667759d  LuxSense-Pro-Setup-v2.3.1.exe
-a4fa36a6711c14b4582f9606ac9ddeb9b8cf1a978cfb9062c8d26030e520fa59  LuxSense-Pro-v2.3.1-portable.zip
-e80dce2a24409a4972750e3549fbdd14578252dcdbd4e168b748ebb8e51774da  updater.exe
-694b0365ee0d1c4870bd6ce98005ce00da26b21f2d4eccbd47b1cb002751d55c  firmware-manifest.json
+5e635b56899b0c57003a489ebbcdb54402fd1748632ba5e5e4995ca5dd45a9b5  LuxSense-Pro-Setup-v2.3.2.exe
+97866b28415ebe0c15a42f113c00b23903035ef7e223aba88d555013403ab73e  LuxSense-Pro-v2.3.2-portable.zip
+9dd08b4103c1f2e67d36ee73ead5daa18f757690cee22be508e1172af5da16b1  updater.exe
+abf12a012d8d17d71c6cc8cdc8b57a6a60131184d594a4bc5b7ff845637d16c2  firmware-manifest.json
 0d252ba9d2fbe909055ffece802cd815879001916b41587d278c33ba19cc5c23  LuxSense_Arduino.ino.hex

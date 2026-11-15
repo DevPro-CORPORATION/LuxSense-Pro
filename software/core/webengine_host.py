@@ -74,6 +74,10 @@ class BridgeBackend(QObject):
     firmwareFlashCompleted = Signal(bool, str, str) # success, summary message, status_type ('SUCCESS' | 'WARNING' | 'FAILED')
     firmwareLogEmitted = Signal(str)           # real-time diagnostic log stream
 
+    # General App Notifications and Explicit Device Status Signals
+    deviceStatusChanged = Signal(str)          # JSON: { arduino_online: bool, sensor_active: bool, port: str, sensor_addr: str }
+    appNotification = Signal(str, str, str)    # type ('success' | 'warning' | 'error' | 'info'), title, message
+
     def __init__(self, parent_window: Optional[QMainWindow] = None, auto_connect: bool = True):
         super().__init__()
         self.parent_window = parent_window
@@ -120,6 +124,12 @@ class BridgeBackend(QObject):
             self.current_hardware_state = "DISCONNECTED"
             self.hardwareStateChanged.emit("DISCONNECTED")
             self.statusChanged.emit("DISCONNECTED — No hardware serial port available", "#E06C75")
+            self.deviceStatusChanged.emit(json.dumps({
+                "arduino_online": False,
+                "sensor_active": False,
+                "port": target_port,
+                "sensor_addr": ""
+            }))
 
     def _start_serial_worker(self, port: str, baud: int):
         """Start or restart the SerialWorker thread for real telemetry."""
@@ -131,7 +141,17 @@ class BridgeBackend(QObject):
         self.serial_worker.data_signal.connect(self._on_serial_data)
         self.serial_worker.status_signal.connect(self._on_serial_status)
         self.serial_worker.state_signal.connect(self._on_serial_state)
+        self.serial_worker.device_status_signal.connect(self._on_device_status)
         self.serial_worker.start()
+
+    def _on_device_status(self, arduino_online: bool, sensor_active: bool, port: str, sensor_addr: str):
+        payload = {
+            "arduino_online": arduino_online,
+            "sensor_active": sensor_active,
+            "port": port,
+            "sensor_addr": sensor_addr
+        }
+        self.deviceStatusChanged.emit(json.dumps(payload))
 
     def _on_serial_data(self, raw_lux: float, cal_lux: float, packet_id: int, port: str):
         """Forward verified physical sensor packet to SQLite and React frontend."""
@@ -209,6 +229,21 @@ class BridgeBackend(QObject):
         if self.serial_worker:
             self.serial_worker.reload_calibration()
         return True
+
+    @Slot(result=str)
+    def getDeviceStatus(self) -> str:
+        """Return explicit Arduino and GY-30 connection status as JSON."""
+        arduino_online = getattr(self.serial_worker, "arduino_online", False) if self.serial_worker else False
+        sensor_active = getattr(self.serial_worker, "sensor_active", False) if self.serial_worker else False
+        sensor_addr = getattr(self.serial_worker, "sensor_addr", "") if self.serial_worker else ""
+        return json.dumps({
+            "arduino_online": arduino_online,
+            "sensor_active": sensor_active,
+            "port": self.settings.serial_port,
+            "sensor_addr": sensor_addr,
+            "baud_rate": self.settings.baud_rate,
+            "hardware_state": self.current_hardware_state
+        })
 
     @Slot(result=str)
     def getSettings(self) -> str:
@@ -490,42 +525,41 @@ class BridgeBackend(QObject):
         Returns JSON with show: bool, previous_version, current_version, and release notes.
         """
         should_show = self.settings.should_show_changelog()
-        prev = self.settings.previous_version or "2.3.0"
+        prev = self.settings.previous_version or "2.3.1"
 
         info = {
             "show": should_show,
             "previous_version": prev,
             "current_version": APP_VERSION,
             "release_date": "2026-11-15",
-            "release_name": f"LuxSense Pro v{APP_VERSION} — Production Metrology & Performance Release",
-            "summary": "LuxSense Pro has been successfully updated to the latest certified release with complete dependency bundling, enhanced optical metrology, and high-performance hardware programming.",
+            "release_name": f"LuxSense Pro v{APP_VERSION} — Production Reliability, UI/UX Stabilization & Premium Update Experience",
+            "summary": "LuxSense Pro has been updated to v2.3.2 with dedicated JetBrains-style update experience, independent Arduino and GY-30 sensor health monitoring, 3-state firmware flashing notifications, and stabilized progress animations.",
             "categories": [
                 {
-                    "title": "Appearance & UI Refinement",
-                    "badge": "UI/UX",
-                    "items": [
-                        "Global Light / Dark / System appearance toggle directly in application header",
-                        "Instant theme switching across all views, charts, and dialogs without restart",
-                        "High-contrast light mode styling tailored for bright ambient laboratory environments"
-                    ]
-                },
-                {
-                    "title": "Firmware & Programming Engine",
+                    "title": "Firmware Flashing & Hardware Isolation",
                     "badge": "HARDWARE",
                     "items": [
-                        "Sub-10-second ATmega328P firmware flashing with Optiboot STK500v1 protocol",
-                        "Non-blocking threaded stream reader eliminating Windows pipe deadlock",
-                        "Real-time bootloader synchronization retry detection & diagnostic warnings",
-                        "Comprehensive elapsed phase timing breakdown and safe cancellation recovery"
+                        "Reliable 3-state reporting: SUCCESS, WARNING (device detection), and FAILED with interactive recovery steps",
+                        "Decoupled Arduino board connection tracking from GY-30 / BH1750 I2C sensor health",
+                        "Continuous sensor hot-plug detection without serial port reset or UI flickering"
                     ]
                 },
                 {
-                    "title": "Metrology & System Reliability",
+                    "title": "Premium Update Architecture",
+                    "badge": "UPDATER",
+                    "items": [
+                        "Dedicated native Windows Update Manager window inspired by JetBrains / PyCharm IDE updates",
+                        "Real-time step-by-step progress tracking: package validation, shutdown, safety backup, file replacement, and relaunch",
+                        "Elapsed time counter, non-flickering progress bars, and automatic rollback on failure"
+                    ]
+                },
+                {
+                    "title": "UI/UX Stability & Metrology Polish",
                     "badge": "STABILITY",
                     "items": [
-                        "Dynamic ECharts reinitialization on appearance mode transitions",
-                        "Guaranteed user settings and calibration persistence in %APPDATA%",
-                        "Automated post-update release notes with paper-friendly print and PDF export"
+                        "Smooth, stabilized progress indicators with non-decrementing monotonicity guards",
+                        "Eliminated unnecessary component remounting and animation restarts during 4.0 Hz telemetry",
+                        "Dedicated floating notification toasts for all system, firmware, and update events"
                     ]
                 }
             ]
@@ -619,7 +653,7 @@ class BridgeBackend(QObject):
     def startFirmwareFlash(self, port: str, hex_path_str: str, allow_downgrade: bool = False, board: str = "uno") -> bool:
         """Safely flash physical Arduino Uno/Nano firmware with explicit pre-flight checks."""
         if self.firmware_worker and self.firmware_worker.isRunning():
-            self.firmwareFlashCompleted.emit(False, "A firmware update is already in progress.")
+            self._on_firmware_flash_done(False, "A firmware update is already in progress.", "FAILED")
             return False
 
         # Load manifest
@@ -627,14 +661,14 @@ class BridgeBackend(QObject):
         if not manifest_file.exists():
             manifest_file = ROOT_DIR / "firmware" / "firmware-manifest.json"
         if not manifest_file.exists():
-            self.firmwareFlashCompleted.emit(False, "Firmware manifest not found.")
+            self._on_firmware_flash_done(False, "Firmware manifest not found.", "FAILED")
             return False
 
         try:
             with open(manifest_file, "r", encoding="utf-8") as f:
                 manifest_data = json.load(f)
         except Exception as e:
-            self.firmwareFlashCompleted.emit(False, f"Cannot parse manifest: {e}")
+            self._on_firmware_flash_done(False, f"Cannot parse manifest: {e}", "FAILED")
             return False
 
         hex_path = Path(hex_path_str) if hex_path_str else (ROOT_DIR / "firmware" / "build" / manifest_data.get("hex_filename", "LuxSense_Arduino.ino.hex"))
@@ -668,9 +702,19 @@ class BridgeBackend(QObject):
         self.firmware_worker.stateChanged.connect(self._on_firmware_state_changed)
         self.firmware_worker.progressChanged.connect(self.firmwareFlashProgress.emit)
         self.firmware_worker.logEmitted.connect(self.firmwareLogEmitted.emit)
-        self.firmware_worker.flashCompleted.connect(self.firmwareFlashCompleted.emit)
+        self.firmware_worker.flashCompleted.connect(self._on_firmware_flash_done)
         self.firmware_worker.start()
         return True
+
+    def _on_firmware_flash_done(self, success: bool, message: str, status_type: str = "SUCCESS"):
+        self.firmwareFlashCompleted.emit(success, message, status_type)
+        notif_type = "success" if status_type == "SUCCESS" else ("warning" if status_type == "WARNING" else "error")
+        notif_title = (
+            "Firmware Flash Successful" if status_type == "SUCCESS"
+            else ("Firmware Flash Warning" if status_type == "WARNING"
+            else "Firmware Flash Failed")
+        )
+        self.appNotification.emit(notif_type, notif_title, message)
 
     def _on_firmware_state_changed(self, state: str):
         self.firmwareStatusChanged.emit(state)

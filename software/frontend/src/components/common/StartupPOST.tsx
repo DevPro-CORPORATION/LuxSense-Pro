@@ -72,7 +72,7 @@ export const StartupPOST: React.FC<StartupPOSTProps> = ({ onComplete }) => {
         setStepStates(prev => prev.map((s, idx) => idx === 0 ? { ...s, status: 'active' } : s));
         setLogs(prev => [...prev, '[BOOT +40ms] Initializing LuxSense Pro runtime core...']);
 
-        let ver = '2.3.1';
+        let ver = '2.3.2';
         try {
           ver = await bridge.getAppVersion();
           setAppVersion(ver);

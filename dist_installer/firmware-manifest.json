@@ -1,7 +1,7 @@
 {
   "firmware_version": "2.0.0",
   "release_name": "LuxSense Pro Microcode v2.0.0 (Scientific Radiometry)",
-  "published_at": "2026-11-15T14:28:16Z",
+  "published_at": "2026-11-15T15:38:48Z",
   "target_board": "arduino:avr:uno",
   "target_mcu": "atmega328p",
   "bootloader": "optiboot",
@@ -17,5 +17,5 @@
   "hex_size": 31567,
   "release_notes": "Official v2.0.0 firmware featuring dynamic dual-address I2C detection, handshake verification, and explicit disconnection reporting.",
   "publisher": "DevPro-CORP Root Authority",
-  "signature": "b8ce311643b67d143630d013a4ec13879f7df1ca9f72a219989de87146d55f78acc5fa1cb0b33dbb7f44fa71fab42c8262db56f63ab9774410a0f5fe9fae8600"
+  "signature": "b500b7e4af093d5738085ac0ad710dfc4e1200e394c0f22da08643dbe50ab557f7c7bd55218e6e6fac4ebc11045e0c0b77e2e3c78f791e37ff755e3d65ca170c"
 }

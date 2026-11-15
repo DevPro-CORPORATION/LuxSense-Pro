@@ -14,7 +14,7 @@ from typing import Dict, Any, Optional, List
 
 APP_NAME = "LuxSense Pro"
 APP_IDENTIFIER = "LuxSensePro"
-APP_VERSION = "2.3.1"
+APP_VERSION = "2.3.2"
 ORG_NAME = "DevPro-CORP"
 GITHUB_OWNER = "DevPro-CORPORATION"
 GITHUB_REPO = "LuxSense-Pro"

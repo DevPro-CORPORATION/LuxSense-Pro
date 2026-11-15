@@ -17,7 +17,7 @@ from typing import Optional
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
-APP_VERSION = "2.3.1"
+APP_VERSION = "2.3.2"
 DIST_DIR = ROOT_DIR / "dist"
 INSTALLER_DIR = ROOT_DIR / "dist_installer"
 ISCC_PATH = Path(r"C:\Users\AIMLOPS\AppData\Local\Programs\Inno Setup 6\ISCC.exe")
@@ -191,10 +191,10 @@ def step_generate_checksums_and_manifest():
         "version": APP_VERSION,
         "tag_name": f"v{APP_VERSION}",
         "channel": "stable",
-        "release_name": f"LuxSense Pro v{APP_VERSION} — Unified Software & Firmware Update Architecture",
-        "published_at": "2026-11-15T15:45:00Z",
+        "release_name": f"LuxSense Pro v{APP_VERSION} — Production Reliability, UI/UX Stabilization & Premium Update Experience",
+        "published_at": "2026-11-15T21:00:00Z",
         "prerelease": False,
-        "release_notes": "Official release of LuxSense Pro v2.3.1 featuring complete production bug hunt resolutions, enhanced Light Mode contrast and dynamic chart theming, dual Uno/Nano AVR flashing support, directory collision-safe updater rollback, and validated hardware integration.",
+        "release_notes": "Official release of LuxSense Pro v2.3.2 featuring dedicated native JetBrains-style update progress window, independent Arduino/sensor status monitoring, reliable 3-state firmware flashing notifications, stabilized progress indicators, and complete rollback safeguards.",
         "assets": assets_manifest
     }
     manifest_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")

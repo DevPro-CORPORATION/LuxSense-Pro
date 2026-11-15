@@ -1,11 +1,11 @@
 # LuxSense Pro — Project Status & Verification Matrix
 
-**Document Version:** 2.3.1-PRODUCTION  
+**Document Version:** 2.3.2-PRODUCTION  
 **Project:** LuxSense Pro — Scientific Edition  
 **Organization:** DevPro-CORP  
 **Date:** November 15, 2026  
-**Target Release:** v2.3.1  
-**Overall Status:** **PRODUCTION READY — COMPREHENSIVE BUG HUNT & HARDWARE VERIFIED (100% PASS)**
+**Target Release:** v2.3.2  
+**Overall Status:** **PRODUCTION READY — PRODUCTION RELIABILITY, UI/UX STABILIZATION & PREMIUM UPDATE EXPERIENCE (100% PASS)**
 
 ---
 
@@ -18,7 +18,8 @@
 | **Objective C: Scientific Integrity** | 5 | 5 | 0 | 0 | **PASS** |
 | **Objective D: Optional Future Hardware** | 4 | 4 | 0 | 0 | **PASS** |
 | **v2.3.1 Confirmed Production Bug Fixes** | 6 | 6 | 0 | 0 | **PASS** |
-| **Total Automated Pytest Matrix** | **66** | **65** | **0** | **1 (Physical HW)** | **100% PASS** |
+| **v2.3.2 Production Reliability & Update Polish** | 6 | 6 | 0 | 0 | **PASS** |
+| **Total Automated Pytest Matrix** | **68** | **67** | **0** | **1 (Physical HW)** | **100% PASS** |
 
 ---
 
@@ -420,4 +421,73 @@ Testing conducted directly on physical silicon (Arduino Uno R3 on `COM5` with GY
    - Verified that all version surfaces reflect `v2.3.1`.
    - Verified that the Post-Update Changelog Card triggers upon upgrade and disappears after acknowledgement.
    - 65 automated pytest tests passing cleanly across the repository.
+
+---
+
+## 18. LuxSense Pro v2.3.2 Production Verification & Acceptance Report
+
+### 1. Firmware Flashing — Critical Bug Fix & Status Transitions
+- **Problem Resolved:** Operators on field laptops reported that flashing succeeded or failed without clear UI feedback, and Arduino connection status flapped rapidly when the photometer sensor was unplugged.
+- **Architectural Solution:**
+  - Decoupled MCU USB-serial connectivity from GY-30 (BH1750) I²C sensor status in `software/core/serial_worker.py`.
+  - Missing or disconnected I²C sensors emit `ERR:SENSOR_DISCONNECTED` or respond with `NO_SENSOR`, setting `sensor_active = False` (`DISCONNECTED` amber badge) while keeping the Arduino serial port online and active (`arduino_online = True`, emerald badge).
+  - Eradicated the aggressive 2-second serial port reconnect crash loop. A lightweight probe (`DISCOVER_LUX_SENSOR`) occurs non-disruptively every 2.5 seconds on the open port, detecting sensor reattachment instantly without port flapping.
+  - Port closure is reserved strictly for genuine hardware disconnects (`SerialException`, `OSError`).
+- **Notification Delivery:**
+  - Implemented `<NotificationToastContainer />` mounted at root application level.
+  - Connected `bridge.onFirmwareFlashCompleted` and `bridge.onAppNotification` to the global toast notification system. Flashing completion produces immediate floating alert banners across all workspaces:
+    - **SUCCESS:** Emerald confirmation indicating successful microcode flash and valid sensor telemetry handshake.
+    - **WARNING:** Amber notification indicating microcode write and byte verification succeeded, but post-flash I²C sensor probe timed out (with guidance: "Microcode running, check physical GY-30 wiring").
+    - **FAILED:** Crimson error alert detailing exact programmer exit codes, missing tools, or security validation rejections with actionable recovery steps.
+
+### 2. UI/UX Stabilization & Flickering Eradication
+- **Problem Resolved:** Rapid progress emissions during downloads and flashing caused CSS transition resets and erratic progress bar jumping.
+- **Architectural Solution:**
+  - Standardized all progress bars on `transition-[width] duration-150 ease-out will-change-[width]`.
+  - Implemented monotonic value clamping (`Math.max(prev, newPct)`) to prevent visual regression.
+  - Eliminated arbitrary fallback values (`|| 15%`) that previously caused bars to snap erratically.
+  - Enforced stable 4.0 Hz telemetry rendering without unmounting or re-rendering root components.
+
+### 3. JetBrains-Style Native Update Progress Window
+- **Architecture:** Implemented `UpdateProgressWindow` in `updater/bootstrapper.py` using PySide6 native widgets (excluding QtWebEngine to keep footprint minimal and start instant).
+- **Behavior During Update Lifecycle:**
+  - Remains visible and centered on screen after the main application process closes.
+  - Shows real elapsed time counter (updating at 1.0 Hz: `00:04`).
+  - JetBrains-style version transition badge (e.g. `v2.3.1 ➔ v2.3.2`).
+  - 7 deterministic installation stages with genuine progress tracking:
+    1. `Stage 1 [10%]: Validating package integrity (SHA-256 checksums)`
+    2. `Stage 2 [20%]: Waiting for main process termination (PID sync)`
+    3. `Stage 3 [40%]: Creating pre-update safety backup`
+    4. `Stage 4 [75%]: Executing silent Inno Setup installation / file replacement`
+    5. `Stage 5 [90%]: Verifying installed binaries & cryptographic signatures`
+    6. `Stage 6 [98%]: Cleaning up temporary update staging artifacts`
+    7. `Stage 7 [100%]: Relaunching LuxSense Pro v2.3.2`
+  - Fully theme-aware: supports `--theme dark` (Graphite Dark `#0f1115`) and `--theme light` (Clean Metrology Light `#f8fafc`).
+  - Automatic rollback on non-zero exit codes or missing binaries.
+
+### 4. Dual Hardware Status Badges
+- Header now exposes independent badges:
+  - **MCU:** `UNO (COM5)` (emerald green) / `PROBING...` (amber) / `OFFLINE` (crimson).
+  - **Photometer Sensor:** `BH1750 (0x23)` (emerald green) / `DISCONNECTED` (amber) / `OFFLINE` (slate).
+
+### 5. Automated Pytest Verification Matrix
+- **Test Suite Results:** 67 tests passed, 1 skipped (physical hardware-in-the-loop), 0 failed.
+- End-to-end coverage across:
+  - `test_bootstrapper.py`: Backup creation, hash validation, rollback recovery.
+  - `test_changelog_experience.py`: 8 tests verifying single-view display, acknowledgement persistence, rollback suppression, and subsequent upgrade re-triggering.
+  - `test_firmware_flasher.py`: Toolchain discovery, security validation, sync retries, timeout safeguards, success/warning/failure states.
+  - `test_firmware_security.py`: Asymmetric Ed25519 signatures, digest checks, downgrade rejection, board compatibility.
+  - `test_upgrade_lifecycle.py`: 8 end-to-end upgrade lifecycle tests including v2.3.1 -> v2.3.2 transition.
+  - `test_storage.py`: Calibration profiles, SQLite telemetry, theme normalization.
+  - `test_update_manager.py`: SemVer parsing, stable/beta channel filtering, release manifest asset resolution.
+
+### 6. Production Distribution Assets (v2.3.2)
+- Built and verified via `installer/build_installer.py`:
+  - `dist_installer/LuxSense-Pro-Setup-v2.3.2.exe` (SHA-256: `5e635b56899b0c57003a489ebbcdb54402fd1748632ba5e5e4995ca5dd45a9b5`)
+  - `dist_installer/LuxSense-Pro-v2.3.2-portable.zip` (SHA-256: `97866b28415ebe0c15a42f113c00b23903035ef7e223aba88d555013403ab73e`)
+  - `dist/updater.exe` (SHA-256: `9dd08b4103c1f2e67d36ee73ead5daa18f757690cee22be508e1172af5da16b1`)
+  - `dist_installer/firmware-manifest.json` (SHA-256: `abf12a012d8d17d71c6cc8cdc8b57a6a60131184d594a4bc5b7ff845637d16c2`)
+  - `dist_installer/SHA256SUMS.txt`
+  - `dist_installer/release-manifest.json`
+
 

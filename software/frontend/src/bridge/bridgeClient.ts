@@ -40,6 +40,15 @@ export interface TelemetryRecord {
   port: string;
 }
 
+export interface DeviceStatus {
+  arduino_online: boolean;
+  sensor_active: boolean;
+  port: string;
+  sensor_addr: string;
+  baud_rate?: number;
+  hardware_state?: string;
+}
+
 declare global {
   interface Window {
     qt?: {
@@ -53,6 +62,8 @@ declare global {
 type TelemetryListener = (packet: TelemetryPacket) => void;
 type StatusListener = (message: string, color: string) => void;
 type HardwareStateListener = (state: string) => void;
+type DeviceStatusListener = (status: DeviceStatus) => void;
+type AppNotificationListener = (type: 'success' | 'warning' | 'error' | 'info', title: string, message: string) => void;
 type UpdateResultListener = (result: any) => void;
 type DownloadProgressListener = (downloaded: number, total: number, percent: number) => void;
 type ReadyToInstallListener = (path: string) => void;
@@ -70,6 +81,8 @@ class BridgeClient {
   private telemetryListeners: TelemetryListener[] = [];
   private statusListeners: StatusListener[] = [];
   private hardwareStateListeners: HardwareStateListener[] = [];
+  private deviceStatusListeners: DeviceStatusListener[] = [];
+  private appNotificationListeners: AppNotificationListener[] = [];
   private updateResultListeners: UpdateResultListener[] = [];
   private downloadProgressListeners: DownloadProgressListener[] = [];
   private readyToInstallListeners: ReadyToInstallListener[] = [];
@@ -198,6 +211,23 @@ class BridgeClient {
         this.firmwareLogListeners.forEach(fn => fn(line));
       });
     }
+
+    if (this.backendObj.deviceStatusChanged) {
+      this.backendObj.deviceStatusChanged.connect((jsonStr: string) => {
+        try {
+          const st: DeviceStatus = JSON.parse(jsonStr);
+          this.deviceStatusListeners.forEach(fn => fn(st));
+        } catch (e) {
+          console.error('[Bridge] Error parsing device status payload:', e);
+        }
+      });
+    }
+
+    if (this.backendObj.appNotification) {
+      this.backendObj.appNotification.connect((type: 'success' | 'warning' | 'error' | 'info', title: string, msg: string) => {
+        this.appNotificationListeners.forEach(fn => fn(type, title, msg));
+      });
+    }
   }
 
   private initStandaloneEmulation() {
@@ -314,6 +344,35 @@ class BridgeClient {
     return () => {
       this.firmwareLogListeners = this.firmwareLogListeners.filter(f => f !== cb);
     };
+  }
+
+  public onDeviceStatus(cb: DeviceStatusListener) {
+    this.deviceStatusListeners.push(cb);
+    return () => {
+      this.deviceStatusListeners = this.deviceStatusListeners.filter(f => f !== cb);
+    };
+  }
+
+  public onAppNotification(cb: AppNotificationListener) {
+    this.appNotificationListeners.push(cb);
+    return () => {
+      this.appNotificationListeners = this.appNotificationListeners.filter(f => f !== cb);
+    };
+  }
+
+  public async getDeviceStatus(): Promise<DeviceStatus> {
+    if (this.backendObj && this.backendObj.getDeviceStatus) {
+      return new Promise<DeviceStatus>((resolve) => {
+        this.backendObj.getDeviceStatus((res: string) => {
+          try {
+            resolve(JSON.parse(res));
+          } catch {
+            resolve({ arduino_online: false, sensor_active: false, port: '', sensor_addr: '' });
+          }
+        });
+      });
+    }
+    return { arduino_online: true, sensor_active: true, port: 'COM5', sensor_addr: '0x23' };
   }
 
   // Commands to Python

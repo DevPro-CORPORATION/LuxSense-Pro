@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { bridge, TelemetryPacket } from '../../bridge/bridgeClient';
+import { bridge, TelemetryPacket, DeviceStatus } from '../../bridge/bridgeClient';
 import { useTheme } from '../../context/ThemeContext';
 import { 
   Activity, 
@@ -9,7 +9,8 @@ import {
   ShieldCheck, 
   Layers,
   Sun,
-  Moon
+  Moon,
+  Radio
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -19,6 +20,7 @@ interface HeaderProps {
   hardwareState?: string;
   isConnected: boolean;
   appVersion?: string;
+  deviceStatus?: DeviceStatus | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,7 +29,8 @@ export const Header: React.FC<HeaderProps> = ({
   statusColor,
   hardwareState = 'CONNECTING',
   isConnected,
-  appVersion = '2.3.1'
+  appVersion = '2.3.2',
+  deviceStatus
 }) => {
   const { theme, setTheme } = useTheme();
   const [clock, setClock] = useState<string>('');
@@ -63,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Center Instrument Telemetry Status */}
-      <div className="hidden md:flex items-center space-x-4 text-xs font-mono">
+      <div className="hidden md:flex items-center space-x-3 text-xs font-mono">
         {/* Explicit Hardware State Badge */}
         <div className="flex items-center space-x-2 bg-chassis-850 px-2.5 py-1 rounded border border-border">
           <div 
@@ -84,33 +87,42 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center space-x-2 bg-chassis-850 px-3 py-1 rounded border border-border">
-          <div 
-            className="w-2 h-2 rounded-full animate-pulse" 
-            style={{ backgroundColor: statusColor || (isConnected ? '#21D789' : '#E06C75') }} 
-          />
-          <span className="text-zinc-300 font-medium">
-            {statusMessage || (isConnected ? 'ACTIVE SAMPLING 4.0Hz' : 'OFFLINE / DISCONNECTED')}
+        {/* Arduino Controller Status Badge */}
+        <div className="flex items-center space-x-1.5 bg-chassis-850 px-2.5 py-1 rounded border border-border">
+          <Cpu className={`w-3.5 h-3.5 ${
+            deviceStatus?.arduino_online ? 'text-metrology-green' : 
+            hardwareState === 'CONNECTING' ? 'text-amber-400' : 'text-metrology-crimson'
+          }`} />
+          <span className="text-[10px] uppercase text-zinc-400">MCU:</span>
+          <span className={`text-[11px] font-bold ${
+            deviceStatus?.arduino_online ? 'text-metrology-green' : 
+            hardwareState === 'CONNECTING' ? 'text-amber-400' : 'text-metrology-crimson'
+          }`}>
+            {deviceStatus?.arduino_online ? `UNO (${deviceStatus.port || 'USB'})` : 
+             hardwareState === 'CONNECTING' ? 'PROBING...' : 'OFFLINE'}
           </span>
         </div>
 
-        <div className="flex items-center space-x-2 text-zinc-400">
-          <Cpu className="w-3.5 h-3.5 text-zinc-500" />
-          <span>MCU:</span>
-          <span className="text-zinc-200">ATmega328P</span>
-        </div>
-
-        <div className="flex items-center space-x-2 text-zinc-400">
-          <Layers className="w-3.5 h-3.5 text-zinc-500" />
-          <span>SENSOR:</span>
-          <span className="text-zinc-200">BH1750FVI</span>
+        {/* BH1750 Sensor Status Badge */}
+        <div className="flex items-center space-x-1.5 bg-chassis-850 px-2.5 py-1 rounded border border-border">
+          <Layers className={`w-3.5 h-3.5 ${
+            deviceStatus?.sensor_active ? 'text-metrology-green' : 
+            deviceStatus?.arduino_online ? 'text-amber-400' : 'text-zinc-500'
+          }`} />
+          <span className="text-[10px] uppercase text-zinc-400">SENSOR:</span>
+          <span className={`text-[11px] font-bold ${
+            deviceStatus?.sensor_active ? 'text-metrology-green' : 
+            deviceStatus?.arduino_online ? 'text-amber-400' : 'text-zinc-500'
+          }`}>
+            {deviceStatus?.sensor_active ? `BH1750 (${deviceStatus.sensor_addr || '0x23'})` :
+             deviceStatus?.arduino_online ? 'DISCONNECTED' : 'OFFLINE'}
+          </span>
         </div>
 
         {currentPacket && (
-          <div className="flex items-center space-x-2 text-zinc-400">
+          <div className="flex items-center space-x-1.5 bg-chassis-850 px-2.5 py-1 rounded border border-border text-zinc-400">
             <ShieldCheck className="w-3.5 h-3.5 text-metrology-green" />
-            <span>CIPHER:</span>
-            <span className="text-metrology-green font-mono">XOR-128 OK</span>
+            <span className="text-metrology-green font-mono text-[11px]">XOR-128 OK</span>
           </div>
         )}
       </div>

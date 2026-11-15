@@ -97,20 +97,20 @@ def test_acknowledgement_persists_and_prevents_retrigger(isolated_settings):
     assert reloaded.should_show_changelog() is False
 
 def test_failed_update_or_rollback_never_shows_changelog(isolated_settings, monkeypatch):
-    """If a rollback occurs (e.g. user reverts from 2.3.1 to 2.3.0), do NOT show changelog."""
+    """If a rollback occurs (e.g. user reverts from 2.3.2 to 2.3.1), do NOT show changelog."""
     settings_file = isolated_settings / "settings.json"
-    # User had previously acknowledged 2.3.1
+    # User had previously acknowledged 2.3.2
     with open(settings_file, "w", encoding="utf-8") as f:
         json.dump({
-            "last_acknowledged_version": "2.3.1",
+            "last_acknowledged_version": "2.3.2",
             "theme": "dark"
         }, f)
 
-    # Simulate running an older binary (v2.3.0)
-    monkeypatch.setattr("software.core.storage.APP_VERSION", "2.3.0")
+    # Simulate running an older binary (v2.3.1)
+    monkeypatch.setattr("software.core.storage.APP_VERSION", "2.3.1")
 
     settings = UserSettings.load()
-    assert settings.last_acknowledged_version == "2.3.1"
+    assert settings.last_acknowledged_version == "2.3.2"
     assert settings.previous_version is None
     assert settings.should_show_changelog() is False
 

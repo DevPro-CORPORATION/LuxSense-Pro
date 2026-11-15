@@ -338,8 +338,8 @@ class UpdateManager(QObject):
         self.staged_installer_path = installer_path
         self.ready_to_install.emit(installer_path)
 
-    def launch_installer(self, installer_path: Optional[Any] = None, silent: bool = False):
-        """Executes updater bootstrapper and terminates current LuxSense Pro instance."""
+    def launch_installer(self, installer_path: Optional[Any] = None, silent: bool = False, theme: str = "dark", new_version: str = "2.3.2"):
+        """Executes dedicated native updater bootstrapper and terminates current LuxSense Pro instance."""
         target_path = installer_path or self.staged_installer_path
         if not target_path:
             self.update_error.emit("Installer file missing or not verified.")
@@ -360,12 +360,22 @@ class UpdateManager(QObject):
         current_pid = os.getpid()
         current_exe = sys.executable
 
+        # Resolve active user theme from storage
+        try:
+            from software.core.storage import UserSettings
+            active_theme = UserSettings.load().theme or theme
+        except Exception:
+            active_theme = theme
+
         if bootstrapper.exists():
             args = [
                 str(bootstrapper),
                 "--installer", str(target_path),
                 "--target-exe", str(current_exe),
-                "--wait-pid", str(current_pid)
+                "--wait-pid", str(current_pid),
+                "--theme", active_theme,
+                "--old-version", self.current_version,
+                "--new-version", new_version
             ]
             if silent:
                 args.append("--silent")

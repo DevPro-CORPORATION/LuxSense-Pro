@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WorkspaceTab, TelemetryPacket, CalibrationProfile } from './types';
-import { bridge } from './bridge/bridgeClient';
+import { bridge, DeviceStatus } from './bridge/bridgeClient';
 import { ThemeProvider } from './context/ThemeContext';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { StartupPOST } from './components/common/StartupPOST';
 import { PostUpdateChangelogModal, ChangelogData } from './components/common/PostUpdateChangelogModal';
+import { NotificationToastContainer, ToastNotification } from './components/common/NotificationToast';
 import { LiveMonitorWorkspace } from './components/monitor/LiveMonitorWorkspace';
 import { ScientificWorkspace } from './components/scientific/ScientificWorkspace';
 import { AnalyticsWorkspace } from './components/analytics/AnalyticsWorkspace';
@@ -24,15 +25,31 @@ export const App: React.FC = () => {
   const [statusColor, setStatusColor] = useState<string>('#21D789');
   const [hardwareState, setHardwareState] = useState<string>('CONNECTING');
   const [isConnected, setIsConnected] = useState<boolean>(true);
+  const [deviceStatus, setDeviceStatus] = useState<DeviceStatus | null>(null);
+  const [notifications, setNotifications] = useState<ToastNotification[]>([]);
   const [calibration, setCalibration] = useState<CalibrationProfile | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
   const [pendingChangelog, setPendingChangelog] = useState<ChangelogData | null>(null);
-  const [appVersion, setAppVersion] = useState<string>('2.3.1');
+  const [appVersion, setAppVersion] = useState<string>('2.3.2');
+
+  const addNotification = useCallback((notif: Omit<ToastNotification, 'id'>) => {
+    const id = Date.now().toString() + Math.random().toString(36).substring(2, 7);
+    setNotifications(prev => [...prev.slice(-4), { ...notif, id }]);
+  }, []);
+
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
 
   useEffect(() => {
     // Dynamic version retrieval from installed binary
     bridge.getAppVersion().then((v) => {
       if (v) setAppVersion(v);
+    }).catch(console.error);
+
+    // Initial device status load
+    bridge.getDeviceStatus().then((st) => {
+      if (st) setDeviceStatus(st);
     }).catch(console.error);
 
     // Check if an update was recently installed and needs changelog acknowledgement
@@ -69,15 +86,53 @@ export const App: React.FC = () => {
       setHardwareState(st);
       if (st === 'LIVE MEASUREMENT') {
         setIsConnected(true);
-      } else if (st === 'DISCONNECTED' || st === 'SENSOR ERROR') {
+      } else if (st === 'DISCONNECTED') {
         setIsConnected(false);
       }
+    });
+
+    // Subscribe to explicit dual device status (Arduino Online vs Sensor Active)
+    const unsubDeviceStatus = bridge.onDeviceStatus((st) => {
+      setDeviceStatus(st);
+      if (st.arduino_online && st.sensor_active) {
+        setIsConnected(true);
+      } else if (!st.arduino_online) {
+        setIsConnected(false);
+      }
+    });
+
+    // Subscribe to system and firmware notifications
+    const unsubAppNotif = bridge.onAppNotification((type, title, message) => {
+      addNotification({ type, title, message });
+    });
+
+    const unsubFwDone = bridge.onFirmwareFlashCompleted((success, message, statusType) => {
+      const finalStatus = statusType || (success ? 'SUCCESS' : 'FAILED');
+      const type = finalStatus === 'SUCCESS' ? 'success' : finalStatus === 'WARNING' ? 'warning' : 'error';
+      const title = finalStatus === 'SUCCESS' 
+        ? 'Firmware Flash Successful' 
+        : finalStatus === 'WARNING' 
+        ? 'Firmware Flash Warning' 
+        : 'Firmware Flash Failed';
+      addNotification({
+        type,
+        title,
+        message,
+        actionLabel: finalStatus === 'FAILED' ? 'Open Recovery' : undefined,
+        onAction: finalStatus === 'FAILED' ? () => setCurrentTab('settings') : undefined,
+        durationMs: finalStatus === 'FAILED' ? 15000 : 8000
+      });
     });
 
     // Subscribe to update notifications
     const unsubUpdate = bridge.onUpdateResult((res) => {
       if (res && res.available) {
         setUpdateAvailable(true);
+        addNotification({
+          type: 'info',
+          title: 'Update Available',
+          message: `LuxSense Pro v${res.version || res.tag_name} is available. Visit Settings to review and install.`
+        });
       }
     });
 
@@ -85,9 +140,12 @@ export const App: React.FC = () => {
       unsubTelemetry();
       unsubStatus();
       unsubHardwareState();
+      unsubDeviceStatus();
+      unsubAppNotif();
+      unsubFwDone();
       unsubUpdate();
     };
-  }, []);
+  }, [addNotification]);
 
   const handleAcknowledgeChangelog = () => {
     if (pendingChangelog) {
@@ -99,6 +157,12 @@ export const App: React.FC = () => {
   return (
     <ThemeProvider>
       <div className="flex flex-col h-screen w-screen bg-chassis-900 text-[#DFE2E8] font-sans overflow-hidden select-none">
+        {/* Floating App Notification Toast System */}
+        <NotificationToastContainer 
+          notifications={notifications} 
+          onDismiss={removeNotification} 
+        />
+
         {/* Cinematic Startup POST sequence */}
         <AnimatePresence>
           {showStartup && (
@@ -122,6 +186,7 @@ export const App: React.FC = () => {
           hardwareState={hardwareState}
           isConnected={isConnected}
           appVersion={appVersion}
+          deviceStatus={deviceStatus}
         />
 
         <div className="flex flex-1 h-[calc(100vh-3rem)] overflow-hidden">

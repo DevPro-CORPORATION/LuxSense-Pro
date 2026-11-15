@@ -1,6 +1,6 @@
 # LuxSense Pro — Continuous In-App Update Architecture
 
-**Document Version:** 2.3.1-PRODUCTION  
+**Document Version:** 2.3.2-PRODUCTION  
 **Date:** November 15, 2026  
 **Publisher:** DevPro-CORP  
 **Module:** Update Center & Standalone Bootstrapper Pipeline
@@ -14,6 +14,7 @@ LuxSense Pro delivers seamless software updates through an integrated, in-app Up
 2. **Zero Data Loss Guarantee:** User settings, dark-offset/gain calibration profiles, and historical SQLite measurements are decoupled from application binaries and are 100% preserved across updates.
 3. **Atomic Execution & Automatic Rollback:** Updates are executed by a dedicated external bootstrapper process (`updater.exe`). If an installation is interrupted or fails verification, the updater automatically rolls back to the previous working installation.
 4. **Firmware Decoupling:** Hardware firmware updates remain completely independent and require explicit, intentional user initiation. The updater **never** automatically flashes connected Arduino microcontrollers.
+5. **JetBrains-Style Visual Feedback:** During the update window when the main GUI process is closed, a native PySide6 floating window keeps the user informed of real elapsed time, version transition, and stage-by-stage progress.
 
 ---
 
@@ -35,13 +36,15 @@ LuxSense Pro delivers seamless software updates through an integrated, in-app Up
 [Cryptographic Verification] ── SHA-256 verification against release-manifest.json
             │  (User confirms installation)
             ▼
-[Handover to updater.exe] ── Main app closes; bootstrapper waits for PID exit
+[Handover to updater.exe] ── Main app closes; native update progress window opens
             │
-            ├──> Step 1: Create timestamped backup of current installation
-            ├──> Step 2: Execute verified Inno Setup installer silently
-            ├──> Step 3: Verify exit code == 0
-            │       ├── [SUCCESS] ──> Launch updated LuxSensePro.exe
-            │       └── [FAILURE] ──> Execute rollback() from backup directory
+            ├──> Stage 1 [10%]: Validating package integrity (SHA-256 checksums)
+            ├──> Stage 2 [20%]: Waiting for main process termination (PID sync)
+            ├──> Stage 3 [40%]: Creating pre-update safety backup
+            ├──> Stage 4 [75%]: Executing silent Inno Setup installation / file replacement
+            ├──> Stage 5 [90%]: Verifying installed binaries & cryptographic signatures
+            ├──> Stage 6 [98%]: Cleaning up temporary update staging artifacts
+            └──> Stage 7 [100%]: Relaunching LuxSense Pro v2.3.2
 ```
 
 ---
