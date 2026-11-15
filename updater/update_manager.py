@@ -116,7 +116,7 @@ class UpdateCheckWorker(QThread):
                 self.check_completed.emit(
                     False,
                     best_release,
-                    f"LuxSense Pro is up to date (Installed: v{self.current_version}, Latest: v{best_release.get('tag_name')})."
+                    f"LuxSense Pro is up to date (Installed: v{self.current_version}, Latest: {best_release.get('tag_name')})."
                 )
                 return
 
