@@ -60,6 +60,16 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build Frontend
+        run: |
+          npm --prefix software/frontend install
+          npm --prefix software/frontend run build
+
       - name: Install Inno Setup
         run: |
           choco install innosetup --no-progress -y

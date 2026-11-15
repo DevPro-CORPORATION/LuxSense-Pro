@@ -21,6 +21,18 @@ DIST_DIR = ROOT_DIR / "dist"
 INSTALLER_DIR = ROOT_DIR / "dist_installer"
 ISCC_PATH = Path(r"C:\Users\AIMLOPS\AppData\Local\Programs\Inno Setup 6\ISCC.exe")
 
+def find_iscc() -> Optional[Path]:
+    candidates = [
+        ISCC_PATH,
+        Path(r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"),
+        Path(r"C:\Program Files\Inno Setup 6\ISCC.exe"),
+        Path(shutil.which("iscc") or "")
+    ]
+    for c in candidates:
+        if c and c.exists():
+            return c
+    return None
+
 def compute_sha256(filepath: Path) -> str:
     sha = hashlib.sha256()
     with open(filepath, "rb") as f:
@@ -30,6 +42,12 @@ def compute_sha256(filepath: Path) -> str:
 
 def step_compile_app():
     print("--- [1/5] Compiling LuxSense Pro Desktop Application with PyInstaller ---")
+    dist_frontend = ROOT_DIR / "software" / "frontend" / "dist"
+    if not dist_frontend.exists():
+        print("Frontend dist not found, compiling frontend assets via npm...")
+        subprocess.run(["npm", "--prefix", "software/frontend", "install"], check=True, cwd=str(ROOT_DIR), shell=True)
+        subprocess.run(["npm", "--prefix", "software/frontend", "run", "build"], check=True, cwd=str(ROOT_DIR), shell=True)
+
     spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
 a = Analysis(
     ['software/main.py'],
@@ -95,13 +113,14 @@ def step_build_inno_installer():
     INSTALLER_DIR.mkdir(parents=True, exist_ok=True)
     iss_file = ROOT_DIR / "installer" / "LuxSensePro_Setup.iss"
 
-    if ISCC_PATH.exists():
-        cmd = [str(ISCC_PATH), str(iss_file)]
+    iscc_bin = find_iscc()
+    if iscc_bin:
+        cmd = [str(iscc_bin), str(iss_file)]
         subprocess.run(cmd, check=True, cwd=str(ROOT_DIR))
         print(f"Built LuxSense-Pro-Setup-v{APP_VERSION}.exe successfully.")
     else:
         print(f"Searching for iscc in PATH...")
-        subprocess.run(["iscc", str(iss_file)], check=True, cwd=str(ROOT_DIR))
+        subprocess.run(["iscc", str(iss_file)], check=True, cwd=str(ROOT_DIR), shell=True)
 
 def step_package_portable_zip():
     print("--- [4/5] Creating Portable Distribution ZIP ---")
