@@ -19,6 +19,7 @@ export const App: React.FC = () => {
   const [currentPacket, setCurrentPacket] = useState<TelemetryPacket | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('SYNCHRONIZING TELEMETRY STREAM');
   const [statusColor, setStatusColor] = useState<string>('#21D789');
+  const [hardwareState, setHardwareState] = useState<string>('CONNECTING');
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const [calibration, setCalibration] = useState<CalibrationProfile | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
@@ -29,16 +30,31 @@ export const App: React.FC = () => {
       setCalibration(cal);
     }).catch(console.error);
 
+    bridge.getHardwareState().then((st) => {
+      if (st) setHardwareState(st);
+    }).catch(() => {});
+
     // Subscribe to real-time telemetry packets
     const unsubTelemetry = bridge.onTelemetry((packet) => {
       setCurrentPacket(packet);
       setIsConnected(true);
+      setHardwareState('LIVE MEASUREMENT');
     });
 
     // Subscribe to status updates
     const unsubStatus = bridge.onStatus((msg, col) => {
       setStatusMessage(msg);
       setStatusColor(col);
+    });
+
+    // Subscribe to explicit hardware acquisition state
+    const unsubHardwareState = bridge.onHardwareState((st) => {
+      setHardwareState(st);
+      if (st === 'LIVE MEASUREMENT') {
+        setIsConnected(true);
+      } else if (st === 'DISCONNECTED' || st === 'SENSOR ERROR') {
+        setIsConnected(false);
+      }
     });
 
     // Subscribe to update notifications
@@ -51,6 +67,7 @@ export const App: React.FC = () => {
     return () => {
       unsubTelemetry();
       unsubStatus();
+      unsubHardwareState();
       unsubUpdate();
     };
   }, []);
@@ -69,6 +86,7 @@ export const App: React.FC = () => {
         currentPacket={currentPacket}
         statusMessage={statusMessage}
         statusColor={statusColor}
+        hardwareState={hardwareState}
         isConnected={isConnected}
       />
 
@@ -95,6 +113,7 @@ export const App: React.FC = () => {
                 <LiveMonitorWorkspace 
                   packet={currentPacket} 
                   calibration={calibration} 
+                  hardwareState={hardwareState}
                 />
               )}
 

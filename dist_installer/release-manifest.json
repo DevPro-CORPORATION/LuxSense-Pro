@@ -9,20 +9,20 @@
   "assets": {
     "LuxSense-Pro-Setup-v2.1.0.exe": {
       "filename": "LuxSense-Pro-Setup-v2.1.0.exe",
-      "sha256": "d9e53860947444ba0a37581796d36ec3b7e2afb99e58a27938254a33f2f29fc4",
-      "size": 221874885,
+      "sha256": "c40d85e287481f610eb1690738bab9eef111a8750ec979ff1ac8c1c53b7e015f",
+      "size": 221877766,
       "url": "https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/LuxSense-Pro-Setup-v2.1.0.exe"
     },
     "LuxSense-Pro-v2.1.0-portable.zip": {
       "filename": "LuxSense-Pro-v2.1.0-portable.zip",
-      "sha256": "99c1c0168096830efbf08380ccc1af984b3f5e599017c14a50d9366ee6fea8c4",
-      "size": 230610651,
+      "sha256": "3bdffb177731bf5b18f619c2d3e6a12f76556696ddb24b1b37371e544aeda70e",
+      "size": 230611802,
       "url": "https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/LuxSense-Pro-v2.1.0-portable.zip"
     },
     "updater.exe": {
       "filename": "updater.exe",
-      "sha256": "42eae82758050c66de77f7792b654f8841a221687f9afc5a1540a81d1b728756",
-      "size": 9396784,
+      "sha256": "459c8e618aa00f4e7c4c6e9c7813942b2e2168855bfdb858fa4d4d54373c2efa",
+      "size": 9396227,
       "url": "https://github.com/DevPro-CORPORATION/luxsense-pro/releases/download/v2.1.0/updater.exe"
     }
   }

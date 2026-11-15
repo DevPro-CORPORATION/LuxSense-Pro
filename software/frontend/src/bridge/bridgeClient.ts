@@ -51,6 +51,7 @@ declare global {
 
 type TelemetryListener = (packet: TelemetryPacket) => void;
 type StatusListener = (message: string, color: string) => void;
+type HardwareStateListener = (state: string) => void;
 type UpdateResultListener = (result: any) => void;
 type DownloadProgressListener = (downloaded: number, total: number, percent: number) => void;
 type ReadyToInstallListener = (path: string) => void;
@@ -62,6 +63,7 @@ class BridgeClient {
 
   private telemetryListeners: TelemetryListener[] = [];
   private statusListeners: StatusListener[] = [];
+  private hardwareStateListeners: HardwareStateListener[] = [];
   private updateResultListeners: UpdateResultListener[] = [];
   private downloadProgressListeners: DownloadProgressListener[] = [];
   private readyToInstallListeners: ReadyToInstallListener[] = [];
@@ -107,6 +109,12 @@ class BridgeClient {
     if (this.backendObj.statusChanged) {
       this.backendObj.statusChanged.connect((msg: string, col: string) => {
         this.statusListeners.forEach(fn => fn(msg, col));
+      });
+    }
+
+    if (this.backendObj.hardwareStateChanged) {
+      this.backendObj.hardwareStateChanged.connect((state: string) => {
+        this.hardwareStateListeners.forEach(fn => fn(state));
       });
     }
 
@@ -177,6 +185,20 @@ class BridgeClient {
     return () => {
       this.statusListeners = this.statusListeners.filter(f => f !== cb);
     };
+  }
+
+  public onHardwareState(cb: HardwareStateListener) {
+    this.hardwareStateListeners.push(cb);
+    return () => {
+      this.hardwareStateListeners = this.hardwareStateListeners.filter(f => f !== cb);
+    };
+  }
+
+  public async getHardwareState(): Promise<string> {
+    if (this.backendObj?.getHardwareState) {
+      return await this.backendObj.getHardwareState();
+    }
+    return 'DISCONNECTED';
   }
 
   public onUpdateResult(cb: UpdateResultListener) {

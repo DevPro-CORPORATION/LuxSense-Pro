@@ -18,11 +18,13 @@ import {
 interface LiveMonitorWorkspaceProps {
   packet: TelemetryPacket | null;
   calibration: CalibrationProfile | null;
+  hardwareState?: string;
 }
 
 export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
   packet,
-  calibration
+  calibration,
+  hardwareState = 'CONNECTING'
 }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [timeWindow, setTimeWindow] = useState<number>(30);
@@ -48,10 +50,13 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Display value based on unit mode
-  const displayVal = unitMode === 'lx' 
-    ? calLux.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : footCandles;
+  // Display value based on hardware state and unit mode
+  const isLive = hardwareState === 'LIVE MEASUREMENT';
+  const displayVal = !isLive 
+    ? '---.--'
+    : (unitMode === 'lx' 
+        ? calLux.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : footCandles);
 
   // Threshold compliance status (EN 12464-1: 300 - 750 lx)
   const getThresholdStatus = (lux: number) => {
@@ -132,12 +137,36 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
               <span className="text-2xl font-mono text-metrology-green font-semibold">{unitMode}</span>
             </div>
 
-            {/* Threshold Compliance Pill */}
-            <div 
-              className="text-[11px] font-mono px-2.5 py-1 rounded border hidden sm:block"
-              style={{ borderColor: thresholdStatus.color, color: thresholdStatus.color, backgroundColor: `${thresholdStatus.color}15` }}
-            >
-              {thresholdStatus.label}
+            {/* Hardware State & Threshold Status */}
+            <div className="flex flex-col items-end space-y-1.5">
+              <div 
+                className="text-[11px] font-mono px-2.5 py-0.5 rounded border uppercase tracking-wider font-semibold flex items-center space-x-1.5"
+                style={{
+                  borderColor: hardwareState === 'LIVE MEASUREMENT' ? '#21D789' : hardwareState === 'CONNECTING' ? '#E5C07B' : hardwareState === 'SENSOR DETECTED' ? '#61AFEF' : '#E06C75',
+                  color: hardwareState === 'LIVE MEASUREMENT' ? '#21D789' : hardwareState === 'CONNECTING' ? '#E5C07B' : hardwareState === 'SENSOR DETECTED' ? '#61AFEF' : '#E06C75',
+                  backgroundColor: hardwareState === 'LIVE MEASUREMENT' ? '#21D78915' : hardwareState === 'CONNECTING' ? '#E5C07B15' : hardwareState === 'SENSOR DETECTED' ? '#61AFEF15' : '#E06C7515'
+                }}
+              >
+                <div 
+                  className={`w-2 h-2 rounded-full ${
+                    hardwareState === 'LIVE MEASUREMENT' ? 'animate-pulse bg-[#21D789]' :
+                    hardwareState === 'CONNECTING' ? 'animate-ping bg-[#E5C07B]' :
+                    hardwareState === 'SENSOR DETECTED' ? 'bg-[#61AFEF]' :
+                    'bg-[#E06C75]'
+                  }`}
+                />
+                <span>{hardwareState}</span>
+              </div>
+
+              {/* Threshold Compliance Pill (only active when live) */}
+              {isLive && (
+                <div 
+                  className="text-[11px] font-mono px-2.5 py-1 rounded border hidden sm:block"
+                  style={{ borderColor: thresholdStatus.color, color: thresholdStatus.color, backgroundColor: `${thresholdStatus.color}15` }}
+                >
+                  {thresholdStatus.label}
+                </div>
+              )}
             </div>
           </div>
 
@@ -220,6 +249,35 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Hardware State Warning Banners */}
+      {hardwareState === 'SENSOR ERROR' && (
+        <div className="bg-red-500/10 border border-red-500/40 text-red-400 px-4 py-3 rounded-xl flex items-center justify-between font-mono text-xs shadow-sm">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-red-300">SENSOR ERROR:</span>
+            <span>BH1750 photodiode sensor disconnected or I2C communication failed. Zero fabricated readings are emitted. Check SDA (A4) / SCL (A5) wiring.</span>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-200 uppercase font-semibold">NO SYNTHETIC FALLBACK</span>
+        </div>
+      )}
+      {hardwareState === 'DISCONNECTED' && (
+        <div className="bg-zinc-800/80 border border-border text-zinc-400 px-4 py-3 rounded-xl flex items-center justify-between font-mono text-xs">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-zinc-300">DISCONNECTED:</span>
+            <span>Arduino Uno serial port is offline or disconnected. Reconnect USB cable to resume real measurements.</span>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-700 text-zinc-300 uppercase font-semibold">OFFLINE</span>
+        </div>
+      )}
+      {hardwareState === 'CONNECTING' && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 px-4 py-3 rounded-xl flex items-center justify-between font-mono text-xs">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-amber-200">CONNECTING:</span>
+            <span>Probing Arduino Uno on serial port and handshaking with BH1750 sensor...</span>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 animate-pulse uppercase font-semibold">PROBING</span>
+        </div>
+      )}
 
       {/* Main Oscillographic Waveform Chart Container */}
       <div className="flex-1 bg-chassis-950 border border-border rounded-xl flex flex-col min-h-[380px] shadow-instrument">

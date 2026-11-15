@@ -1,66 +1,36 @@
 """
-LuxSense Pro — PySide6 Qt WebEngine Host & IPC Bridge
-Hosts the React + TypeScript frontend in a high-performance Chromium desktop shell,
-providing bidirectional IPC communication through Qt WebChannel.
+LuxSense Pro — PySide6 WebEngine IPC Host
+Exposes Python hardware acquisition, calibration engine, SQLite persistence,
+and update services to the React frontend via QtWebChannel.
 """
 
-import os
 import sys
 import json
-import math
 import time
-import random
-import csv
-from pathlib import Path
-from typing import Optional, Dict, Any, List
-
-from PySide6.QtCore import (
-    QObject, 
-    Signal, 
-    Slot, 
-    QUrl, 
-    QTimer, 
-    Qt, 
-    QPoint
-)
-from PySide6.QtGui import QIcon, QColor
-from PySide6.QtWidgets import (
-    QApplication, 
-    QMainWindow, 
-    QVBoxLayout, 
-    QWidget
-)
-from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWebEngineCore import (
-    QWebEngineProfile, 
-    QWebEnginePage, 
-    QWebEngineSettings
-)
-from PySide6.QtWebChannel import QWebChannel
+import os
+from typing import Optional, List, Dict, Any
 
 import serial.tools.list_ports
+from PySide6.QtCore import QObject, Signal, Slot, QTimer
+from PySide6.QtWidgets import QMainWindow, QApplication
 
 from software.core.config import (
-    APP_NAME, 
-    APP_VERSION, 
-    DEFAULT_BAUD_RATE, 
-    DEFAULT_SERIAL_PORT as DEFAULT_PORT
+    APP_NAME,
+    APP_VERSION,
+    DEFAULT_SERIAL_PORT as DEFAULT_PORT,
+    DEFAULT_BAUD_RATE
 )
 from software.core.storage import (
-    UserSettings, 
-    CalibrationProfile, 
-    MeasurementHistory, 
+    UserSettings,
+    CalibrationProfile,
+    MeasurementHistory,
     get_app_data_dir
 )
-from software.core.crypto_packet import encrypt_packet, decrypt_packet
 from software.core.scientific_engine import (
     calculate_uncertainty_budget,
     calculate_light_exposure,
     calculate_spatial_uniformity,
-    analyze_threshold_compliance,
-    SpatialMeasurementPoint,
-    lux_to_foot_candles,
-    lux_to_estimated_irradiance
+    analyze_threshold_compliance
 )
 from software.core.report_generator import (
     generate_scientific_csv,
@@ -72,18 +42,19 @@ from updater.update_manager import UpdateManager
 class BridgeBackend(QObject):
     """
     Qt WebChannel bridge backend exposed to JavaScript as window.backend.
-    Handles hardware acquisition, calibration calculations, SQLite persistence,
-    and the GitHub update engine.
+    Handles physical hardware acquisition, calibration calculations, SQLite persistence,
+    and the GitHub update engine. Real sensor data only — no simulation fallback.
     """
     # Signals to JavaScript
     telemetryReceived = Signal(str)            # JSON: TelemetryPacket
     statusChanged = Signal(str, str)           # message, hex color
+    hardwareStateChanged = Signal(str)         # CONNECTING, SENSOR DETECTED, LIVE MEASUREMENT, DISCONNECTED, SENSOR ERROR
     updateCheckResult = Signal(str)           # JSON: UpdateInfo
     downloadProgress = Signal(int, int, float) # downloaded, total, percent
     readyToInstall = Signal(str)               # installer file path
     verificationError = Signal(str)            # error description
 
-    def __init__(self, parent_window: Optional[QMainWindow] = None):
+    def __init__(self, parent_window: Optional[QMainWindow] = None, auto_connect: bool = True):
         super().__init__()
         self.parent_window = parent_window
         self.settings = UserSettings.load()
@@ -101,42 +72,67 @@ class BridgeBackend(QObject):
 
         self.serial_worker: Optional[SerialWorker] = None
         self.active_session_id = "default"
+        self.current_hardware_state = "DISCONNECTED"
 
-        # Simulation fallback state (runs if no physical serial sensor is attached)
-        self.sim_active = True
-        self.sim_packet_id = 100
-        self.sim_lux_base = 542.80
-        self.sim_timer = QTimer(self)
-        self.sim_timer.timeout.connect(self._generate_simulated_packet)
-        self.sim_timer.start(400) # 2.5 Hz continuous high-res sampling
+        # Auto-connect to physical hardware outside of unit tests
+        if auto_connect and "pytest" not in sys.modules:
+            self._init_hardware_worker()
 
-    # -------------------------------------------------------------
-    # Simulated Hardware Telemetry Fallback
-    # -------------------------------------------------------------
-    def _generate_simulated_packet(self):
-        if not self.sim_active:
-            return
+    def _init_hardware_worker(self):
+        """Auto-detect Arduino Uno and initialize serial communication worker."""
+        target_port = self.settings.serial_port
+        ports = list(serial.tools.list_ports.comports())
+        
+        # Auto-detect Arduino Uno if available
+        for p in ports:
+            desc = p.description or ""
+            if "Arduino" in desc or "Uno" in desc or "CH340" in desc or p.vid == 0x2341:
+                target_port = p.device
+                self.settings.serial_port = target_port
+                self.settings.save()
+                break
 
-        self.sim_packet_id += 1
-        # Realistic physical photopic illumination drift
-        drift = (random.random() - 0.49) * 3.8
-        self.sim_lux_base = max(5.0, min(95000.0, self.sim_lux_base + drift))
-        raw_lux = round(self.sim_lux_base, 2)
-        cal_lux = round(self.calibration.apply(raw_lux), 2)
+        available_devices = [p.device for p in ports]
+        if target_port in available_devices:
+            self._start_serial_worker(target_port, self.settings.baud_rate)
+        else:
+            self.current_hardware_state = "DISCONNECTED"
+            self.hardwareStateChanged.emit("DISCONNECTED")
+            self.statusChanged.emit("DISCONNECTED — No hardware serial port available", "#E06C75")
 
-        # Record to SQLite database
-        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
-        self.history.add_reading(raw_lux, cal_lux, self.sim_packet_id, self.settings.serial_port)
+    def _start_serial_worker(self, port: str, baud: int):
+        """Start or restart the SerialWorker thread for real telemetry."""
+        if self.serial_worker is not None:
+            self.serial_worker.stop()
+            self.serial_worker = None
+
+        self.serial_worker = SerialWorker(port=port, baud=baud)
+        self.serial_worker.data_signal.connect(self._on_serial_data)
+        self.serial_worker.status_signal.connect(self._on_serial_status)
+        self.serial_worker.state_signal.connect(self._on_serial_state)
+        self.serial_worker.start()
+
+    def _on_serial_data(self, raw_lux: float, cal_lux: float, packet_id: int, port: str):
+        """Forward verified physical sensor packet to SQLite and React frontend."""
+        self.history.add_reading(raw_lux, cal_lux, packet_id, port, session_id=self.active_session_id)
 
         packet_dict = {
-            "raw_lux": raw_lux,
-            "cal_lux": cal_lux,
-            "packet_id": self.sim_packet_id,
-            "port": self.settings.serial_port,
+            "raw_lux": round(raw_lux, 2),
+            "cal_lux": round(cal_lux, 2),
+            "packet_id": packet_id,
+            "port": port,
             "timestamp": time.strftime("%H:%M:%S"),
-            "checksum_ok": True
+            "checksum_ok": True,
+            "state": "LIVE MEASUREMENT"
         }
         self.telemetryReceived.emit(json.dumps(packet_dict))
+
+    def _on_serial_status(self, msg: str, color: str):
+        self.statusChanged.emit(msg, color)
+
+    def _on_serial_state(self, state: str):
+        self.current_hardware_state = state
+        self.hardwareStateChanged.emit(state)
 
     # -------------------------------------------------------------
     # JavaScript Slots (Callable from React)
@@ -149,21 +145,32 @@ class BridgeBackend(QObject):
             desc = f"{port.device} — {port.description}"
             ports.append(desc)
         if not ports:
-            ports = [f"{self.settings.serial_port} — Arduino Uno (Virtual Metrology Core)"]
+            ports = [f"{self.settings.serial_port} — Arduino Uno (Hardware Port)"]
         return json.dumps(ports)
+
+    @Slot(result=str)
+    def getHardwareState(self) -> str:
+        """Return current hardware acquisition state."""
+        return self.current_hardware_state
 
     @Slot(str, int)
     def connectHardware(self, port: str, baud: int):
         """Connect to physical hardware COM port."""
-        self.settings.serial_port = port
+        clean_port = port.split(" — ")[0].strip() if " — " in port else port.strip()
+        self.settings.serial_port = clean_port
         self.settings.baud_rate = baud
         self.settings.save()
-        self.statusChanged.emit(f"Serial port updated to {port} @ {baud} baud", "#21D789")
+        self._start_serial_worker(clean_port, baud)
 
     @Slot()
     def disconnectHardware(self):
         """Disconnect hardware port."""
-        self.statusChanged.emit("Hardware disconnected", "#E06C75")
+        if self.serial_worker is not None:
+            self.serial_worker.stop()
+            self.serial_worker = None
+        self.current_hardware_state = "DISCONNECTED"
+        self.hardwareStateChanged.emit("DISCONNECTED")
+        self.statusChanged.emit("DISCONNECTED — Hardware disconnected by user", "#E06C75")
 
     @Slot(result=str)
     def getCalibration(self) -> str:
@@ -178,10 +185,8 @@ class BridgeBackend(QObject):
         self.calibration.notes = notes
         self.calibration.calibrated_at = time.strftime("%Y-%m-%d %H:%M:%S")
         self.calibration.save()
-        self.statusChanged.emit(
-            f"Calibration updated (Offset: {zero_offset:+.2f} lx, Gain: {gain_multiplier:.4f}x)",
-            "#21D789"
-        )
+        if self.serial_worker:
+            self.serial_worker.reload_calibration()
         return True
 
     @Slot(result=str)
@@ -191,74 +196,69 @@ class BridgeBackend(QObject):
 
     @Slot(str, result=bool)
     def saveSettings(self, settings_json: str) -> bool:
-        """Save user preferences from JSON."""
+        """Save user configuration."""
         try:
             data = json.loads(settings_json)
             self.settings.serial_port = data.get("serial_port", self.settings.serial_port)
-            self.settings.baud_rate = data.get("baud_rate", self.settings.baud_rate)
+            self.settings.baud_rate = int(data.get("baud_rate", self.settings.baud_rate))
             self.settings.update_channel = data.get("update_channel", self.settings.update_channel)
-            self.settings.auto_check_updates = data.get("auto_check_updates", self.settings.auto_check_updates)
+            self.settings.auto_check_updates = bool(data.get("auto_check_updates", self.settings.auto_check_updates))
             self.settings.save()
+
+            if self.serial_worker:
+                self.serial_worker.update_config(self.settings.serial_port, self.settings.baud_rate)
             return True
         except Exception as e:
-            print(f"[BridgeBackend] saveSettings error: {e}", file=sys.stderr)
+            print(f"[Error] Failed to save settings: {e}")
             return False
 
-    @Slot(str)
-    def checkForUpdates(self, channel: str):
-        """Query GitHub Releases for updates on the selected channel."""
-        self.settings.last_update_check = time.strftime("%Y-%m-%d %H:%M:%S")
-        self.settings.save()
-        self.update_mgr.check_for_updates(channel=channel)
-
-    @Slot(str)
-    def downloadUpdate(self, release_json: str):
-        """Initiate update download with cryptographic SHA-256 verification."""
-        try:
-            release_data = json.loads(release_json)
-            self.update_mgr.start_download(release_data)
-        except Exception as e:
-            self.verificationError.emit(f"Failed to initiate download: {e}")
-
-    @Slot()
-    def installUpdate(self):
-        """Launch the standalone updater bootstrapper to install the update safely."""
-        self.update_mgr.launch_installer(silent=False)
+    @Slot(int, result=str)
+    def getRecentTelemetry(self, limit: int = 100) -> str:
+        """Return recent measurements from SQLite database."""
+        records = self.history.get_recent(limit, session_id=self.active_session_id)
+        return json.dumps(records)
 
     @Slot(int, result=str)
     def getTelemetryHistory(self, limit: int = 100) -> str:
-        """Retrieve recent readings from SQLite database."""
-        records = self.history.get_recent(limit)
-        return json.dumps(records)
+        """Alias for getRecentTelemetry."""
+        return self.getRecentTelemetry(limit)
+
+    @Slot(result=str)
+    def exportCsvHistory(self) -> str:
+        """Export session measurements to AppData CSV and return file path."""
+        out_path = os.path.join(get_app_data_dir(), "exports", f"luxsense_export_{int(time.time())}.csv")
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        return self.history.export_to_csv(out_path)
 
     @Slot(result=str)
     def exportHistoryCsv(self) -> str:
-        """Export SQLite readings to a CSV file."""
-        data_dir = get_app_data_dir()
-        export_path = data_dir / f"luxsense_export_{int(time.time())}.csv"
-        records = self.history.get_recent(5000)
-
-        with open(export_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["Timestamp", "Packet_ID", "Raw_Lux", "Calibrated_Lux", "Port"])
-            for r in records:
-                writer.writerow([
-                    r["timestamp"],
-                    r["packet_id"],
-                    r["raw_lux"],
-                    r["calibrated_lux"],
-                    r["port"]
-                ])
-        return str(export_path)
+        """Alias for exportCsvHistory."""
+        return self.exportCsvHistory()
 
     # -------------------------------------------------------------
-    # Scientific Metrology & Laboratory Analysis Slots
+    # Scientific Metrology Slots (Objective B)
     # -------------------------------------------------------------
     @Slot(str, float, result=str)
-    def getUncertaintyBudget(self, session_id: str = "default", accuracy_pct: float = 7.0) -> str:
-        """Calculate GUM / ISO 98-3 uncertainty budget for a session."""
+    def getUncertaintyBudgetBySession(self, session_id: str, accuracy_pct: float) -> str:
         readings = self.history.get_recent(500, session_id=session_id)
-        values = [r["calibrated_lux"] for r in readings] if readings else [self.sim_lux_base]
+        values = [r["calibrated_lux"] for r in readings] if readings else [0.0]
+        budget = calculate_uncertainty_budget(values, sensor_accuracy_percent=accuracy_pct)
+        return json.dumps(budget.to_dict())
+
+    def getUncertaintyBudget(self, arg1: Any = "default", arg2: Any = 4.0) -> str:
+        session_id = "default"
+        accuracy_pct = 4.0
+        if isinstance(arg1, str):
+            session_id = arg1
+            if isinstance(arg2, (int, float)):
+                accuracy_pct = float(arg2)
+        elif isinstance(arg1, (int, float)):
+            accuracy_pct = float(arg1)
+            if isinstance(arg2, str):
+                session_id = arg2
+
+        readings = self.history.get_recent(500, session_id=session_id)
+        values = [r["calibrated_lux"] for r in readings] if readings else [0.0]
         budget = calculate_uncertainty_budget(values, sensor_accuracy_percent=accuracy_pct)
         return json.dumps(budget.to_dict())
 
@@ -267,12 +267,11 @@ class BridgeBackend(QObject):
         """Calculate time-integrated light exposure (Lux-hours per CIE 157:2004)."""
         readings = self.history.get_recent(1000, session_id=session_id)
         if not readings:
-            # Fallback based on simulation run
-            readings = [{"calibrated_lux": self.sim_lux_base, "timestamp": time.strftime("%H:%M:%S")}]
+            return json.dumps(calculate_light_exposure([]).to_dict())
         time_series = []
         base_t = 0.0
         for i, r in enumerate(reversed(readings)):
-            time_series.append((base_t + i * 0.4, r["calibrated_lux"]))
+            time_series.append((base_t + i * 0.25, r["calibrated_lux"]))
         report = calculate_light_exposure(time_series)
         return json.dumps(report.to_dict())
 
@@ -283,57 +282,69 @@ class BridgeBackend(QObject):
 
     @Slot(str, result=str)
     def getSpatialPoints(self, session_id: str = "default") -> str:
-        """Retrieve spatial points list."""
-        points = self.history.get_spatial_points(session_id=session_id)
-        return json.dumps(points)
+        """Retrieve all spatial points for a session."""
+        pts = self.history.get_spatial_points(session_id=session_id)
+        return json.dumps(pts)
 
     @Slot(str, result=bool)
     def clearSpatialPoints(self, session_id: str = "default") -> bool:
-        """Clear all spatial mapping points for a session."""
+        """Clear spatial points for a session."""
         return self.history.clear_spatial_points(session_id=session_id)
 
     @Slot(str, result=str)
     def getUniformityReport(self, session_id: str = "default") -> str:
-        """Calculate spatial uniformity ratios U1, U2 and diversity per EN 12464-1."""
-        raw_pts = self.history.get_spatial_points(session_id=session_id)
-        pts = [
-            SpatialMeasurementPoint(
-                point_id=p["point_id"],
-                label=p["label"],
-                x_m=p["x_m"],
-                y_m=p["y_m"],
-                measured_lux=p["measured_lux"],
-                timestamp=p["timestamp"]
-            ) for p in raw_pts
-        ]
+        """Calculate EN 12464-1 uniformity metrics (U1, U2, Diversity)."""
+        pts = self.history.get_spatial_points(session_id=session_id)
         report = calculate_spatial_uniformity(pts)
         return json.dumps(report.to_dict())
 
     @Slot(str, str, str, str, float, float, str, result=bool)
-    def createExperimentSession(self, session_id: str, name: str, operator: str, lighting_type: str, min_th: float, max_th: float, notes: str) -> bool:
-        """Create or update an experimental session."""
-        return self.history.create_session(session_id, name, operator, lighting_type, min_th, max_th, notes)
+    def createExperimentSession(
+        self,
+        session_id: str,
+        name: str,
+        operator: str,
+        lighting_type: str,
+        min_lux: float,
+        max_lux: float,
+        notes: str
+    ) -> bool:
+        """Create and switch to a new experiment session."""
+        ok = self.history.create_session(
+            session_id=session_id,
+            name=name,
+            operator=operator,
+            lighting_type=lighting_type,
+            min_th=min_lux,
+            max_th=max_lux,
+            notes=notes
+        )
+        if ok:
+            self.active_session_id = session_id
+        return ok
 
     @Slot(result=str)
     def listExperimentSessions(self) -> str:
-        """List all registered experimental sessions."""
+        """List all experiment sessions."""
         sessions = self.history.list_sessions()
         return json.dumps(sessions)
 
+    @Slot(str, str, str, result=str)
     @Slot(str, str, result=str)
-    def exportScientificReport(self, session_id: str = "default", format_type: str = "csv") -> str:
-        """Export comprehensive scientific report in CSV or print-ready HTML/PDF."""
-        if format_type.lower() == "html" or format_type.lower() == "pdf":
+    @Slot(str, result=str)
+    def exportScientificReport(self, session_id: str = "default", export_type: str = "csv", out_dir: str = "") -> str:
+        """Export metrology-grade CSV or HTML certificate."""
+        if export_type.lower() == "csv":
+            return generate_scientific_csv(session_id=session_id)
+        else:
             return generate_scientific_html_report(session_id=session_id)
-        return generate_scientific_csv(session_id=session_id)
 
     @Slot(result=float)
     def getSerialLatency(self) -> float:
         """Return serial round-trip communication latency in milliseconds."""
         if self.serial_worker and self.serial_worker.isRunning():
             return self.serial_worker.measure_latency_ms()
-        # Simulated serial RTT with USB bus jitter (0.8 - 2.5 ms)
-        return round(1.2 + random.random() * 0.9, 2)
+        return 0.0
 
     # -------------------------------------------------------------
     # Window Frame Controls
@@ -344,7 +355,7 @@ class BridgeBackend(QObject):
             self.parent_window.showMinimized()
 
     @Slot()
-    def maximizeWindow(self):
+    def toggleMaximizeWindow(self):
         if self.parent_window:
             if self.parent_window.isMaximized():
                 self.parent_window.showNormal()
@@ -353,128 +364,50 @@ class BridgeBackend(QObject):
 
     @Slot()
     def closeWindow(self):
+        if self.serial_worker:
+            self.serial_worker.stop()
         if self.parent_window:
             self.parent_window.close()
+        else:
+            QApplication.quit()
 
     # -------------------------------------------------------------
-    # Internal Update Event Handlers
+    # Update Engine Slots
     # -------------------------------------------------------------
-    def _on_update_available(self, release_data: Dict[str, Any]):
-        tag = release_data.get("tag_name", "").lstrip("v")
-        res = {
-            "available": True,
-            "version": tag,
-            "tag_name": release_data.get("tag_name", ""),
-            "channel": self.settings.update_channel,
-            "release_name": release_data.get("name") or f"LuxSense Pro v{tag}",
-            "body": release_data.get("body", ""),
-            "assets": release_data.get("assets", [])
-        }
-        self.updateCheckResult.emit(json.dumps(res))
+    @Slot(bool)
+    def checkForUpdates(self, user_initiated: bool = True):
+        """Trigger update check."""
+        self.update_mgr.check_for_updates(user_initiated=user_initiated)
 
-    def _on_update_not_available(self, message: str):
-        res = {
-            "available": False,
-            "version": APP_VERSION,
-            "tag_name": f"v{APP_VERSION}",
-            "channel": self.settings.update_channel,
-            "release_name": f"LuxSense Pro v{APP_VERSION}",
-            "body": message
-        }
-        self.updateCheckResult.emit(json.dumps(res))
+    @Slot()
+    def downloadUpdate(self):
+        """Download latest release installer."""
+        self.update_mgr.download_latest_installer()
+
+    @Slot(str)
+    def installUpdate(self, installer_path: str):
+        """Launch update installation."""
+        self.update_mgr.launch_installer(installer_path)
+
+    # -------------------------------------------------------------
+    # Internal Signal Forwarding
+    # -------------------------------------------------------------
+    def _on_update_available(self, info: Dict[str, Any]):
+        info["available"] = True
+        self.updateCheckResult.emit(json.dumps(info))
+
+    def _on_update_not_available(self, version: str):
+        info = {"available": False, "version": version, "body": "You have the latest version."}
+        self.updateCheckResult.emit(json.dumps(info))
 
     def _on_update_error(self, err_msg: str):
         self.statusChanged.emit(f"Update Check Error: {err_msg}", "#E06C75")
-        res = {
-            "available": False,
-            "version": APP_VERSION,
-            "tag_name": f"v{APP_VERSION}",
-            "channel": self.settings.update_channel,
-            "release_name": f"LuxSense Pro v{APP_VERSION}",
-            "body": f"Update check notice: {err_msg}"
-        }
-        self.updateCheckResult.emit(json.dumps(res))
 
-    def _on_download_progress(self, down: int, total: int, pct: float):
-        self.downloadProgress.emit(down, total, pct)
+    def _on_download_progress(self, dl: int, tot: int, pct: float):
+        self.downloadProgress.emit(dl, tot, pct)
 
-    def _on_ready_to_install(self, path: Path):
-        self.readyToInstall.emit(str(path))
+    def _on_ready_to_install(self, path: str):
+        self.readyToInstall.emit(path)
 
-    def _on_verification_failed(self, msg: str):
-        self.verificationError.emit(msg)
-
-
-class LuxSenseWebWindow(QMainWindow):
-    """
-    Main desktop window embedding Qt WebEngine and connecting to the React interface.
-    """
-    def __init__(self, dev_mode: bool = False):
-        super().__init__()
-        self.setWindowTitle(f"LuxSense Pro v{APP_VERSION} — Optical Radiometry Workstation")
-        self.setMinimumSize(1120, 740)
-        self.resize(1280, 840)
-
-        # Set dark palette styling
-        self.setStyleSheet("background-color: #07080A; color: #DFE2E8;")
-
-        # Central container
-        central_widget = QWidget(self)
-        self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        # Initialize WebEngine View
-        self.browser = QWebEngineView(self)
-        layout.addWidget(self.browser)
-
-        # Configure WebEngine Settings
-        settings = self.browser.settings()
-        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
-        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
-        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
-        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
-        settings.setAttribute(QWebEngineSettings.WebAttribute.ScrollAnimatorEnabled, True)
-
-        # Setup Qt WebChannel
-        self.channel = QWebChannel(self.browser.page())
-        self.backend = BridgeBackend(parent_window=self)
-        self.channel.registerObject("backend", self.backend)
-        self.browser.page().setWebChannel(self.channel)
-
-        # Determine target URL
-        if dev_mode and os.environ.get("VITE_DEV_SERVER"):
-            target_url = QUrl(os.environ.get("VITE_DEV_SERVER"))
-        else:
-            if getattr(sys, 'frozen', False):
-                base_dir = Path(getattr(sys, '_MEIPASS', Path(sys.executable).parent))
-            else:
-                base_dir = Path(__file__).resolve().parents[1]
-            dist_index = base_dir / "frontend" / "dist" / "index.html"
-            if not dist_index.exists():
-                dist_index = base_dir / "software" / "frontend" / "dist" / "index.html"
-            if not dist_index.exists():
-                dist_index = Path.cwd() / "software" / "frontend" / "dist" / "index.html"
-            target_url = QUrl.fromLocalFile(str(dist_index.resolve()))
-
-        print(f"[WebEngineHost] Loading interface: {target_url.toString()}")
-        self.browser.setUrl(target_url)
-
-
-def run_desktop_app():
-    """Launch the LuxSense Pro desktop application."""
-    app = QApplication(sys.argv)
-    app.setApplicationName("LuxSense Pro")
-    app.setOrganizationName("DevPro Corporation")
-    app.setOrganizationDomain("devpro-corp.github.io")
-
-    dev_mode = "--dev" in sys.argv or bool(os.environ.get("VITE_DEV_SERVER"))
-    window = LuxSenseWebWindow(dev_mode=dev_mode)
-    window.show()
-
-    return app.exec()
-
-
-if __name__ == "__main__":
-    sys.exit(run_desktop_app())
+    def _on_verification_failed(self, err: str):
+        self.verificationError.emit(err)

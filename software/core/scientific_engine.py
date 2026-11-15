@@ -263,7 +263,10 @@ def calculate_spatial_uniformity(points: List[SpatialMeasurementPoint]) -> Unifo
             summary="No spatial points recorded."
         )
 
-    lux_vals = [p.measured_lux for p in points]
+    lux_vals = [
+        p.measured_lux if hasattr(p, "measured_lux") else float(p.get("measured_lux", 0.0))
+        for p in points
+    ]
     min_val = min(lux_vals)
     max_val = max(lux_vals)
     avg_val = sum(lux_vals) / len(lux_vals)

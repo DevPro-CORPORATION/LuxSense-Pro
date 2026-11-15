@@ -16,6 +16,7 @@ interface HeaderProps {
   currentPacket: TelemetryPacket | null;
   statusMessage: string;
   statusColor: string;
+  hardwareState?: string;
   isConnected: boolean;
 }
 
@@ -23,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentPacket,
   statusMessage,
   statusColor,
+  hardwareState = 'CONNECTING',
   isConnected
 }) => {
   const [clock, setClock] = useState<string>('');
@@ -58,14 +60,34 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Center Instrument Telemetry Status */}
-      <div className="hidden md:flex items-center space-x-6 text-xs font-mono">
+      <div className="hidden md:flex items-center space-x-4 text-xs font-mono">
+        {/* Explicit Hardware State Badge */}
+        <div className="flex items-center space-x-2 bg-chassis-850 px-2.5 py-1 rounded border border-border">
+          <div 
+            className={`w-2.5 h-2.5 rounded-full ${
+              hardwareState === 'LIVE MEASUREMENT' ? 'animate-pulse bg-[#21D789]' :
+              hardwareState === 'CONNECTING' ? 'animate-ping bg-[#E5C07B]' :
+              hardwareState === 'SENSOR DETECTED' ? 'bg-[#61AFEF]' :
+              'bg-[#E06C75]'
+            }`}
+          />
+          <span className="font-bold text-[11px] tracking-wider uppercase" style={{
+            color: hardwareState === 'LIVE MEASUREMENT' ? '#21D789' :
+                   hardwareState === 'CONNECTING' ? '#E5C07B' :
+                   hardwareState === 'SENSOR DETECTED' ? '#61AFEF' :
+                   '#E06C75'
+          }}>
+            {hardwareState}
+          </span>
+        </div>
+
         <div className="flex items-center space-x-2 bg-chassis-850 px-3 py-1 rounded border border-border">
           <div 
             className="w-2 h-2 rounded-full animate-pulse" 
             style={{ backgroundColor: statusColor || (isConnected ? '#21D789' : '#E06C75') }} 
           />
           <span className="text-zinc-300 font-medium">
-            {statusMessage || (isConnected ? 'ACTIVE SAMPLING 2.5Hz' : 'OFFLINE / DISCONNECTED')}
+            {statusMessage || (isConnected ? 'ACTIVE SAMPLING 4.0Hz' : 'OFFLINE / DISCONNECTED')}
           </span>
         </div>
 

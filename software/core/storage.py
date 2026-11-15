@@ -259,3 +259,23 @@ class MeasurementHistory:
         except Exception:
             return 0
 
+    def export_to_csv(self, filepath: str) -> str:
+        import csv
+        records = self.get_recent(10000)
+        os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+        with open(filepath, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["ID", "Timestamp", "Session", "Packet_ID", "Raw_Lux", "Calibrated_Lux", "Port"])
+            for r in records:
+                writer.writerow([
+                    r.get("id", ""),
+                    r.get("timestamp", ""),
+                    r.get("session_id", "default"),
+                    r.get("packet_id", ""),
+                    r.get("raw_lux", ""),
+                    r.get("calibrated_lux", ""),
+                    r.get("port", "")
+                ])
+        return filepath
+
+
