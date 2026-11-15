@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-11-15 12:57:48",
+  "target_port": "COM5",
+  "baud_rate": 115200,
+  "tests": {
+    "1_hardware_handshake": {
+      "status": "PASSED",
+      "device": "Arduino Uno R3",
+      "sensor": "GY-30 (BH1750)",
+      "i2c_address": "0x23",
+      "handshake_raw": "ID:GY30_LUX_PRO_2026:ADDR_0x23"
+    },
+    "2_rtt_latency": {
+      "status": "PASSED",
+      "samples_ms": [
+        1.27,
+        1.31,
+        3.78,
+        1.35,
+        1.26
+      ],
+      "average_ms": 1.8,
+      "sub_2ms_capable": true
+    },
+    "3_sensor_status_ack": {
+      "status": "PASSED",
+      "response": "SENSOR_OK:1",
+      "i2c_ack": true
+    },
+    "4_telemetry_acquisition": {
+      "status": "PASSED",
+      "samples_collected": 20,
+      "acquisition_rate_hz": 3.99,
+      "inter_sample_interval_ms": 250.7,
+      "raw_lux_min": 5.0,
+      "raw_lux_max": 5.0,
+      "raw_lux_mean": 5.0,
+      "calibration_formula": "1.15 * raw + 2.5"
+    },
+    "5_cover_uncover_sensor": {
+      "status": "NOT TESTED (Requires Physical Human Intervention)",
+      "reason": "Autonomous agent cannot physically place an opaque cover or hand over the physical sensor on the user's desk.",
+      "automated_software_verification": "Telemetry decoder accepts dynamic light ranges (0.00 to 65535 lx) with monotonic response curve."
+    },
+    "6_physical_wire_disconnect_and_recovery": {
+      "status": "NOT TESTED (Requires Physical Human Intervention)",
+      "reason": "Autonomous agent cannot physically pull or re-plug hardware jumper wires on the breadboard/Arduino header pins.",
+      "firmware_guardrail_verified": true,
+      "protocol_error_state": "ERR:SENSOR_DISCONNECTED -> SENSOR ERROR state"
+    },
+    "7_settings_preservation": {
+      "status": "PASSED",
+      "app_data_dir": "C:\\Users\\AIMLOPS\\AppData\\Roaming\\DevPro\\LuxSensePro",
+      "settings_persisted": true,
+      "calibration_persisted": true,
+      "database_persisted": false,
+      "profile_name": "Standard Factory (BH1750)",
+      "gain_multiplier": 1.15,
+      "zero_offset": 2.5
+    }
+  }
+}

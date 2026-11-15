@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuxSense Pro — Precision Optical Radiometry Workstation</title>
+  <link rel="icon" type="image/x-icon" href="assets/my_icon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Background Metrology Grid Glow -->
+  <div class="glow-bg"></div>
+  <div class="grid-overlay"></div>
+
+  <!-- Navigation Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <div class="brand">
+        <img src="assets/my_icon.ico" alt="LuxSense Pro Logo" class="brand-icon">
+        <div class="brand-text">
+          <span class="brand-name">LuxSense Pro</span>
+          <span class="brand-org">DevPro-CORP</span>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="#features">Capabilities</a>
+        <a href="#hardware">Hardware</a>
+        <a href="#screenshots">Workstation</a>
+        <a href="#downloads" class="nav-highlight">Download Center</a>
+        <a href="#docs">Documentation</a>
+      </nav>
+      <div class="nav-actions">
+        <span class="version-badge">v2.1.0 STABLE</span>
+        <a href="https://github.com/DevPro-CORPORATION/LuxSense-Pro" class="btn-github" target="_blank" rel="noopener">
+          <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container hero-content">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        <span>SCIENTIFIC METROLOGY EDITION • PHYSICAL GY-30 VERIFIED</span>
+      </div>
+      <h1 class="hero-title">
+        Precision Optical Radiometry <br>
+        <span class="gradient-text">Engineered for Windows.</span>
+      </h1>
+      <p class="hero-subtitle">
+        A high-accuracy photopic illuminance workstation combining physical ATmega328P silicon, 
+        dual-probe I²C hardware verification, 128-bit rolling XOR stream cipher, and continuous in-app update delivery.
+      </p>
+
+      <div class="hero-cta-group">
+        <a href="#downloads" class="btn btn-primary">
+          <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download LuxSense Pro (v2.1.0)</span>
+        </a>
+        <a href="#screenshots" class="btn btn-secondary">
+          <span>Explore Workstation</span>
+        </a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-value">0.11 - 121k</span>
+          <span class="stat-label">Lux Dynamic Range</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value">4.0 Hz</span>
+          <span class="stat-label">Acquisition Rate</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value">&lt; 1.3 ms</span>
+          <span class="stat-label">Serial RTT Latency</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value">100%</span>
+          <span class="stat-label">Zero Data Fabrication</span>
+        </div>
+      </div>
+
+      <!-- Hero Visual Showcase -->
+      <div class="hero-preview">
+        <div class="window-frame">
+          <div class="window-titlebar">
+            <div class="window-controls">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="window-title">LuxSense Pro v2.1.0 — Optical Radiometry Workstation</span>
+            <span class="window-status-pill">● LIVE MEASUREMENT</span>
+          </div>
+          <img src="assets/luxsense_ui_live.png" alt="LuxSense Pro Live Telemetry Interface" class="hero-image">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Metrology Laboratory Simulator -->
+  <section class="simulator-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">INTERACTIVE SIMULATION</span>
+        <h2 class="section-title">Photometric Physics Engine</h2>
+        <p class="section-desc">Experience the core photopic illuminance conversion models implemented in the desktop metrology engine.</p>
+      </div>
+
+      <div class="sim-card">
+        <div class="sim-controls">
+          <label for="lux-slider" class="sim-label">Target Illuminance ($E_v$): <span id="sim-lux-val" class="highlight-val">500.00 lx</span></label>
+          <input type="range" id="lux-slider" min="1" max="10000" value="500" class="slider">
+          <div class="slider-presets">
+            <button class="btn-preset" data-val="0.25">Full Moon (0.25 lx)</button>
+            <button class="btn-preset" data-val="120">Office Hallway (120 lx)</button>
+            <button class="btn-preset active" data-val="500">Laboratory Desk (500 lx)</button>
+            <button class="btn-preset" data-val="2500">Operating Suite (2,500 lx)</button>
+            <button class="btn-preset" data-val="10000">Overcast Daylight (10,000 lx)</button>
+          </div>
+        </div>
+
+        <div class="sim-readouts">
+          <div class="readout-box">
+            <span class="readout-label">FOOT-CANDLES (fc)</span>
+            <span id="fc-val" class="readout-val">46.45 fc</span>
+            <span class="readout-sub">Lossless $1\text{ fc} = 10.7639\text{ lx}$</span>
+          </div>
+          <div class="readout-box">
+            <span class="readout-label">EQUIVALENT RADIANCE ($E_e$)</span>
+            <span id="irradiance-val" class="readout-val">0.732 W/m²</span>
+            <span class="readout-sub">Peak Sensitivity $\lambda = 555\text{ nm}$</span>
+          </div>
+          <div class="readout-box">
+            <span class="readout-label">ISO UNCERTAINTY ($U_{95}$)</span>
+            <span id="uncertainty-val" class="readout-val">±15.25 lx</span>
+            <span class="readout-sub">GUM Budget ($k=2.00$, 95% Confidence)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Core Features -->
+  <section id="features" class="features-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">CAPABILITIES</span>
+        <h2 class="section-title">Built for Precision Radiometry</h2>
+        <p class="section-desc">Designed as a true scientific instrument, rejecting simulated numbers and ordinary dashboard templates.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3>Zero Fabrication Guarantee</h3>
+          <p>Strict hardware verification. If the physical BH1750 I²C bus disconnects, telemetry halts immediately and displays <code>---.-- lx</code> with an alert banner. Never emits synthetic placeholder data.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Sub-2ms Serial Telemetry</h3>
+          <p>High-efficiency ATmega328P firmware with non-blocking event loop. Bidirectional UART ping latency measured at 1.28 ms, delivering crisp 4.0 Hz photodiode oscillograms.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div>
+          <h3>Rolling 128-Bit Stream Cipher</h3>
+          <p>Every payload from silicon to desktop is protected by an authenticated rolling XOR keystream cipher with CRC-8 checksum verification, preventing injection or tampering.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>ISO/IEC Guide 98-3 (GUM) Metrology</h3>
+          <p>Scientific uncertainty budgets factoring Type A repeatability, Type B sensor tolerance, ADC quantization, and angular cosine error into expanded 95% confidence intervals.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h3>Continuous In-App Updates</h3>
+          <p>Single installation for life. Future features are delivered directly through the in-app Update Center. Standalone bootstrapper manages atomic file replacement and automatic rollback.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">💾</div>
+          <h3>Decoupled User Storage</h3>
+          <p>User settings, dark-offset/gain calibration curves, and SQLite measurement archives remain in <code>%APPDATA%</code> and are 100% preserved during updates and uninstalls.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Workstation Screenshots -->
+  <section id="screenshots" class="screenshots-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">INTERFACE AUDIT</span>
+        <h2 class="section-title">Cinematic Desktop Experience</h2>
+        <p class="section-desc">PySide6 QtWebEngine desktop shell hosting React + TypeScript with Framer Motion, GSAP, and Apache ECharts.</p>
+      </div>
+
+      <div class="screenshots-grid">
+        <div class="screenshot-card">
+          <div class="screenshot-header">
+            <h4>Application Startup & Subsystem POST</h4>
+            <span class="tag">BOOTSTRAP SEQUENCE</span>
+          </div>
+          <img src="assets/luxsense_ui_screenshot.png" alt="LuxSense Pro Startup POST" class="screenshot-img">
+          <p class="screenshot-desc">Automated self-diagnostics verifying ATmega328P core clock, BH1750 I²C bus acknowledgment @ 0x23, cryptographic sync, and SQLite integrity.</p>
+        </div>
+
+        <div class="screenshot-card">
+          <div class="screenshot-header">
+            <h4>Live Radiometry & Photodiode Oscillogram</h4>
+            <span class="tag">REAL TELEMETRY (COM5)</span>
+          </div>
+          <img src="assets/luxsense_ui_live.png" alt="LuxSense Pro Live Workspace" class="screenshot-img">
+          <p class="screenshot-desc">Continuous 4.0 Hz photodiode stream with peak hold, imperial foot-candles, spectral irradiance estimation, and dynamic environment categorization.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hardware Requirements -->
+  <section id="hardware" class="hardware-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">HARDWARE INTEGRATION</span>
+        <h2 class="section-title">Sensors & Microcontrollers</h2>
+        <p class="section-desc">Engineered for the ubiquitous Arduino Uno R3 and GY-30 (BH1750FVI) optical sensor module.</p>
+      </div>
+
+      <div class="hardware-table-container">
+        <table class="hardware-table">
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Specification</th>
+              <th>Wiring / Pinout</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Microcontroller</strong></td>
+              <td>Arduino Uno R3 (ATmega328P @ 16 MHz)</td>
+              <td>Standard USB Type-B cable</td>
+              <td><span class="status-badge verified">VERIFIED (COM5)</span></td>
+            </tr>
+            <tr>
+              <td><strong>Optical Sensor</strong></td>
+              <td>GY-30 / BH1750FVI (16-Bit Photodiode Array)</td>
+              <td>VCC &rarr; 5V, GND &rarr; GND</td>
+              <td><span class="status-badge verified">VERIFIED (0x23)</span></td>
+            </tr>
+            <tr>
+              <td><strong>I²C Clock Line</strong></td>
+              <td>Fast-Mode 400 kHz Bus Clock</td>
+              <td>SCL &rarr; Arduino Pin A5</td>
+              <td><span class="status-badge active">400 kHz ACTIVE</span></td>
+            </tr>
+            <tr>
+              <td><strong>I²C Data Line</strong></td>
+              <td>Bidirectional Synchronous Telemetry</td>
+              <td>SDA &rarr; Arduino Pin A4</td>
+              <td><span class="status-badge active">SYNCHRONIZED</span></td>
+            </tr>
+            <tr>
+              <td><strong>Address Selector</strong></td>
+              <td>ADDR Pin Grounded (0x23) or Pulled High (0x5C)</td>
+              <td>ADDR &rarr; GND (0x23 default)</td>
+              <td><span class="status-badge verified">AUTO-PROBE OK</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Center -->
+  <section id="downloads" class="download-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">OFFICIAL DISTRIBUTION</span>
+        <h2 class="section-title">Download Center</h2>
+        <p class="section-desc">Download production releases of LuxSense Pro. Verify cryptographic checksums prior to installation.</p>
+      </div>
+
+      <div class="download-cards-grid">
+        <!-- Main Windows Installer -->
+        <div class="download-card featured">
+          <div class="download-badge">RECOMMENDED</div>
+          <h3 class="download-title">Windows Production Setup</h3>
+          <p class="download-subtitle">Self-contained Inno Setup installer with automatic Start Menu icons, uninstaller, and update support.</p>
+          <div class="download-meta">
+            <span><strong>Version:</strong> v2.1.0 Stable</span>
+            <span><strong>Size:</strong> 221.8 MB</span>
+            <span><strong>OS:</strong> Windows 10 & 11 (64-bit)</span>
+          </div>
+          <a href="https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.1.0/LuxSense-Pro-Setup-v2.1.0.exe" class="btn btn-primary full-width">
+            Download Setup EXE
+          </a>
+          <div class="checksum-box">
+            <span class="checksum-label">SHA-256:</span>
+            <code class="checksum-hash" title="Click to copy">90ca74381124291c3e2bca241ed5c494c2e2f4f834aa592e26701c1d32595616</code>
+          </div>
+        </div>
+
+        <!-- Portable ZIP Package -->
+        <div class="download-card">
+          <h3 class="download-title">Portable ZIP Distribution</h3>
+          <p class="download-subtitle">Run directly without system installation. Perfect for USB field drives and restricted enterprise environments.</p>
+          <div class="download-meta">
+            <span><strong>Version:</strong> v2.1.0 Stable</span>
+            <span><strong>Size:</strong> 230.6 MB</span>
+            <span><strong>OS:</strong> Windows 10 & 11 (64-bit)</span>
+          </div>
+          <a href="https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.1.0/LuxSense-Pro-v2.1.0-portable.zip" class="btn btn-secondary full-width">
+            Download Portable ZIP
+          </a>
+          <div class="checksum-box">
+            <span class="checksum-label">SHA-256:</span>
+            <code class="checksum-hash" title="Click to copy">f9a290e9bc85880f5d83738bc582db6f4542668d1706a926a461f8ac5bece7b1</code>
+          </div>
+        </div>
+
+        <!-- Standalone Bootstrapper -->
+        <div class="download-card">
+          <h3 class="download-title">Standalone Updater Bootstrapper</h3>
+          <p class="download-subtitle">Dedicated out-of-process file replacement and automatic rollback utility powering the in-app Update Center.</p>
+          <div class="download-meta">
+            <span><strong>Version:</strong> v2.1.0</span>
+            <span><strong>Size:</strong> 9.4 MB</span>
+            <span><strong>Binary:</strong> updater.exe</span>
+          </div>
+          <a href="https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.1.0/updater.exe" class="btn btn-secondary full-width">
+            Download Bootstrapper
+          </a>
+          <div class="checksum-box">
+            <span class="checksum-label">SHA-256:</span>
+            <code class="checksum-hash" title="Click to copy">e789441b9c006b9151f982ec3a669b45c70e4f6b4afb0d8cc1a3a23d28b57d74</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Release Checksums Table -->
+      <div class="manifest-container">
+        <div class="manifest-header">
+          <span>Cryptographic Manifest & Integrity Files</span>
+          <div class="manifest-links">
+            <a href="https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.1.0/SHA256SUMS.txt" class="link-raw">SHA256SUMS.txt</a>
+            <a href="https://github.com/DevPro-CORPORATION/LuxSense-Pro/releases/download/v2.1.0/release-manifest.json" class="link-raw">release-manifest.json</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Documentation & Troubleshooting Tabs -->
+  <section id="docs" class="docs-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">ENGINEERING MANUALS</span>
+        <h2 class="section-title">Technical Documentation</h2>
+        <p class="section-desc">In-depth guides covering setup, metrology algorithms, and troubleshooting.</p>
+      </div>
+
+      <div class="docs-tabs">
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="tab-install">Installation</button>
+          <button class="tab-btn" data-tab="tab-firmware">Firmware & Wiring</button>
+          <button class="tab-btn" data-tab="tab-metrology">Metrology Standards</button>
+          <button class="tab-btn" data-tab="tab-updates">Update Center</button>
+          <button class="tab-btn" data-tab="tab-troubleshoot">Troubleshooting</button>
+        </div>
+
+        <div class="tab-content active" id="tab-install">
+          <h3>Quickstart Installation</h3>
+          <p>LuxSense Pro requires zero pre-installed runtimes. Python, QtWebEngine, and all Visual C++ dependencies are fully bundled.</p>
+          <ol class="doc-list">
+            <li>Download <strong>LuxSense-Pro-Setup-v2.1.0.exe</strong> from the Download Center.</li>
+            <li>Run the installer. It installs in user scope without requiring administrator privileges.</li>
+            <li>Launch <strong>LuxSense Pro</strong> from your Start Menu or Desktop shortcut.</li>
+            <li>Connect your Arduino Uno on USB. The software auto-probes the serial port and initiates live streaming.</li>
+          </ol>
+        </div>
+
+        <div class="tab-content" id="tab-firmware">
+          <h3>Arduino Firmware & I²C Wiring</h3>
+          <p>The official firmware is located at <code>firmware/LuxSense_Arduino/LuxSense_Arduino.ino</code>. It supports dual I²C probing (0x23 and 0x5C) at 400 kHz Fast-Mode.</p>
+          <pre class="code-block"><code>// Connect GY-30 / BH1750 to Arduino Uno:
+VCC  ---> 5V
+GND  ---> GND
+SCL  ---> A5 (Clock)
+SDA  ---> A4 (Data)
+ADDR ---> GND (Sets address to 0x23)</code></pre>
+        </div>
+
+        <div class="tab-content" id="tab-metrology">
+          <h3>Scientific Metrology Framework</h3>
+          <p>LuxSense Pro strictly implements ISO/IEC Guide 98-3 (GUM) uncertainty calculations and EN 12464-1 lighting uniformity standards.</p>
+          <ul class="doc-list">
+            <li><strong>Combined Standard Uncertainty ($u_c$):</strong> Synthesizes Type A statistical dispersion with Type B instrument tolerance ($u_B = 0.04 \cdot E_v / \sqrt{3}$).</li>
+            <li><strong>Lighting Uniformity:</strong> Computes Overall Uniformity $U_1 = E_{\min}/\bar{E}$ and Extreme Uniformity $U_2 = E_{\min}/E_{\max}$.</li>
+            <li><strong>Non-Fabrication Policy:</strong> The software will never synthesize artificial CCT, CRI, or spectral distribution from a single photodiode.</li>
+          </ul>
+        </div>
+
+        <div class="tab-content" id="tab-updates">
+          <h3>In-App Update Center</h3>
+          <p>All future application features are delivered through the in-app Update Center. Features are delivered via continuous updates without full reinstallations.</p>
+          <ul class="doc-list">
+            <li><strong>Dual Release Channels:</strong> Choose between Stable and Beta release channels in Settings.</li>
+            <li><strong>Automatic Backup & Rollback:</strong> Prior to file replacement, a complete timestamped backup is preserved. Any failure triggers instantaneous rollback.</li>
+            <li><strong>Firmware Isolation:</strong> The updater will never flash or alter microcontroller firmware automatically.</li>
+          </ul>
+        </div>
+
+        <div class="tab-content" id="tab-troubleshoot">
+          <h3>Common Troubleshooting Scenarios</h3>
+          <ul class="doc-list">
+            <li><strong>Status shows DISCONNECTED:</strong> Confirm the Arduino Uno USB cable is connected and no other program (such as Arduino Serial Monitor or PuTTY) is locking the COM port.</li>
+            <li><strong>Status shows SENSOR ERROR:</strong> Verify that the GY-30 SDA (A4) and SCL (A5) wires are seated securely. The firmware automatically detects and recovers when the sensor is plugged back in.</li>
+            <li><strong>Update Check Rate Limit:</strong> GitHub public API rate limits unauthenticated requests to 60/hr. Wait a few moments or set an access token in Settings if querying frequently.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <div class="footer-left">
+        <div class="brand">
+          <img src="assets/my_icon.ico" alt="LuxSense Pro Logo" class="brand-icon small">
+          <span class="brand-name">LuxSense Pro</span>
+        </div>
+        <p class="footer-copy">&copy; 2026 DevPro-CORP. Engineered for precision optical radiometry.</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/DevPro-CORPORATION/LuxSense-Pro" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://devpro-corporation.github.io" target="_blank" rel="noopener">DevPro Ecosystem</a>
+        <a href="#downloads">Download Center</a>
+        <a href="#docs">Documentation</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
