@@ -16,7 +16,7 @@ from packaging.version import parse as parse_version
 
 # DevPro-CORP Root Firmware Authority — Ed25519 Public Key (32 bytes Raw Hex)
 # All official LuxSense Pro Arduino firmware releases are signed with the matching private key.
-DEVPRO_FIRMWARE_PUBKEY_HEX = "9a1dc8f01459c05ebb77abbfc71f3b36b00f5aafdf1bc186914085d24bb52d0d"
+DEVPRO_FIRMWARE_PUBKEY_HEX = os.environ.get("DEVPRO_FIRMWARE_PUBKEY_HEX", "9a1dc8f01459c05ebb77abbfc71f3b36b00f5aafdf1bc186914085d24bb52d0d")
 
 @dataclass
 class FirmwareManifest:
@@ -59,8 +59,10 @@ def compute_file_sha256(filepath: Path) -> str:
     return sha.hexdigest().lower()
 
 
-def verify_ed25519_signature(message: bytes, signature_hex: str, public_key_hex: str = DEVPRO_FIRMWARE_PUBKEY_HEX) -> Tuple[bool, str]:
+def verify_ed25519_signature(message: bytes, signature_hex: str, public_key_hex: Optional[str] = None) -> Tuple[bool, str]:
     """Verify an Ed25519 digital signature against a public key."""
+    if not public_key_hex:
+        public_key_hex = os.environ.get("DEVPRO_FIRMWARE_PUBKEY_HEX", DEVPRO_FIRMWARE_PUBKEY_HEX)
     try:
         from cryptography.hazmat.primitives.asymmetric import ed25519
         from cryptography.exceptions import InvalidSignature

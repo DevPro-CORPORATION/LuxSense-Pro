@@ -17,24 +17,12 @@ from software.core.firmware_flasher import (
 from software.core.firmware_security import FirmwareManifest, compute_file_sha256
 
 @pytest.fixture
-def valid_firmware(tmp_path, monkeypatch):
+def valid_firmware(tmp_path):
     hex_path = tmp_path / "firmware.hex"
     hex_path.write_text(":100000000C945C000C946E000C946E000C946E0012\n:00000001FF\n")
 
-    from cryptography.hazmat.primitives.asymmetric import ed25519
-    from cryptography.hazmat.primitives import serialization
-    key_path = Path("private_keys/devpro_firmware_signing.key")
-    if key_path.exists():
-        from cryptography.hazmat.primitives.serialization import load_pem_private_key
-        priv = load_pem_private_key(key_path.read_bytes(), password=None)
-    else:
-        priv = ed25519.Ed25519PrivateKey.generate()
-        pub_hex = priv.public_key().public_bytes(
-            encoding=serialization.Encoding.Raw,
-            format=serialization.PublicFormat.Raw
-        ).hex()
-        monkeypatch.setattr("software.core.firmware_security.DEVPRO_FIRMWARE_PUBKEY_HEX", pub_hex)
-
+    from tests.conftest import get_test_signing_key
+    priv = get_test_signing_key()
     sha = compute_file_sha256(hex_path)
     manifest = FirmwareManifest(
         firmware_version="2.0.0",
