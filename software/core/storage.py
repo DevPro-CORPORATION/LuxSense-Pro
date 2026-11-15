@@ -117,40 +117,139 @@ class MeasurementHistory:
     def _init_db(self):
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
+                CREATE TABLE IF NOT EXISTS sessions (
+                    session_id TEXT PRIMARY KEY,
+                    name TEXT,
+                    operator TEXT,
+                    lighting_type TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    min_threshold REAL DEFAULT 300.0,
+                    max_threshold REAL DEFAULT 750.0,
+                    notes TEXT
+                )
+            """)
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS measurements (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    session_id TEXT DEFAULT 'default',
                     raw_lux REAL,
                     calibrated_lux REAL,
                     packet_id INTEGER,
                     port TEXT
                 )
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS spatial_points (
+                    point_id TEXT PRIMARY KEY,
+                    session_id TEXT DEFAULT 'default',
+                    label TEXT,
+                    x_m REAL,
+                    y_m REAL,
+                    measured_lux REAL,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            # Ensure default session exists
+            conn.execute("""
+                INSERT OR IGNORE INTO sessions (session_id, name, operator, lighting_type, notes)
+                VALUES ('default', 'Standard Laboratory Session', 'DevPro Technician', 'Broadband Ambient', 'Default continuous baseline recording')
+            """)
+            # Automatic column migration if table already existed
+            cursor = conn.execute("PRAGMA table_info(measurements)")
+            cols = [c[1] for c in cursor.fetchall()]
+            if "session_id" not in cols:
+                conn.execute("ALTER TABLE measurements ADD COLUMN session_id TEXT DEFAULT 'default'")
             conn.commit()
 
-    def add_reading(self, raw_lux: float, calibrated_lux: float, packet_id: int, port: str):
+    def add_reading(self, raw_lux: float, calibrated_lux: float, packet_id: int, port: str, session_id: str = "default"):
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
-                    "INSERT INTO measurements (raw_lux, calibrated_lux, packet_id, port) VALUES (?, ?, ?, ?)",
-                    (raw_lux, calibrated_lux, packet_id, port)
+                    "INSERT INTO measurements (session_id, raw_lux, calibrated_lux, packet_id, port) VALUES (?, ?, ?, ?, ?)",
+                    (session_id, raw_lux, calibrated_lux, packet_id, port)
                 )
                 conn.commit()
         except Exception as e:
             print(f"[History] DB insert error: {e}")
 
-    def get_recent(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_recent(self, limit: int = 50, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
-                cursor = conn.execute(
-                    "SELECT timestamp, raw_lux, calibrated_lux, packet_id, port FROM measurements ORDER BY id DESC LIMIT ?",
-                    (limit,)
-                )
+                if session_id:
+                    cursor = conn.execute(
+                        "SELECT timestamp, raw_lux, calibrated_lux, packet_id, port, session_id FROM measurements WHERE session_id = ? ORDER BY id DESC LIMIT ?",
+                        (session_id, limit)
+                    )
+                else:
+                    cursor = conn.execute(
+                        "SELECT timestamp, raw_lux, calibrated_lux, packet_id, port, session_id FROM measurements ORDER BY id DESC LIMIT ?",
+                        (limit,)
+                    )
                 return [dict(row) for row in cursor.fetchall()]
         except Exception as e:
             print(f"[History] DB query error: {e}")
             return []
+
+    def create_session(self, session_id: str, name: str, operator: str, lighting_type: str, min_th: float, max_th: float, notes: str) -> bool:
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO sessions (session_id, name, operator, lighting_type, min_threshold, max_threshold, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (session_id, name, operator, lighting_type, min_th, max_th, notes)
+                )
+                conn.commit()
+                return True
+        except Exception as e:
+            print(f"[History] Create session error: {e}")
+            return False
+
+    def list_sessions(self) -> List[Dict[str, Any]]:
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.execute("SELECT * FROM sessions ORDER BY created_at DESC")
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            print(f"[History] List sessions error: {e}")
+            return []
+
+    def add_spatial_point(self, point_id: str, label: str, x_m: float, y_m: float, measured_lux: float, session_id: str = "default") -> bool:
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO spatial_points (point_id, session_id, label, x_m, y_m, measured_lux) VALUES (?, ?, ?, ?, ?, ?)",
+                    (point_id, session_id, label, x_m, y_m, measured_lux)
+                )
+                conn.commit()
+                return True
+        except Exception as e:
+            print(f"[History] Add spatial point error: {e}")
+            return False
+
+    def get_spatial_points(self, session_id: str = "default") -> List[Dict[str, Any]]:
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.execute(
+                    "SELECT point_id, session_id, label, x_m, y_m, measured_lux, timestamp FROM spatial_points WHERE session_id = ? ORDER BY point_id ASC",
+                    (session_id,)
+                )
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            print(f"[History] Get spatial points error: {e}")
+            return []
+
+    def clear_spatial_points(self, session_id: str = "default") -> bool:
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("DELETE FROM spatial_points WHERE session_id = ?", (session_id,))
+                conn.commit()
+                return True
+        except Exception as e:
+            print(f"[History] Clear spatial points error: {e}")
+            return False
 
     def get_count(self) -> int:
         try:

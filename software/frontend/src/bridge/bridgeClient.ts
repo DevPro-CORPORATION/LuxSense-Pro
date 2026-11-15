@@ -344,6 +344,128 @@ class BridgeClient {
     return 'luxsense_telemetry_export.csv';
   }
 
+  // Scientific Edition API Methods
+  public async getUncertaintyBudget(sessionId: string = 'default', accuracyPct: number = 7.0): Promise<any> {
+    if (this.backendObj?.getUncertaintyBudget) {
+      const res = await this.backendObj.getUncertaintyBudget(sessionId, accuracyPct);
+      return JSON.parse(res);
+    }
+    return {
+      sample_mean: 542.80,
+      standard_deviation: 3.42,
+      standard_error: 0.342,
+      degrees_of_freedom: 99,
+      sensor_accuracy_spec_percent: accuracyPct,
+      sensor_uncertainty_lux: 21.94,
+      repeatability_uncertainty_lux: 0.342,
+      combined_standard_uncertainty: 21.94,
+      expanded_uncertainty_95: 43.88,
+      relative_expanded_uncertainty_pct: 8.08
+    };
+  }
+
+  public async getExposureReport(sessionId: string = 'default'): Promise<any> {
+    if (this.backendObj?.getExposureReport) {
+      const res = await this.backendObj.getExposureReport(sessionId);
+      return JSON.parse(res);
+    }
+    return {
+      total_duration_seconds: 3600.0,
+      duration_hours: 1.0,
+      cumulative_lux_seconds: 1954080.0,
+      cumulative_lux_hours: 542.8,
+      average_lux: 542.8,
+      daily_projected_lux_hours: 5428.0,
+      annual_projected_lux_hours: 1981220.0,
+      cie157_conservation_status: "COMPLIANT: Standard Archival Laboratory Storage"
+    };
+  }
+
+  public async recordSpatialPoint(sessionId: string, pointId: string, label: string, x: number, y: number, lux: number): Promise<boolean> {
+    if (this.backendObj?.recordSpatialPoint) {
+      return await this.backendObj.recordSpatialPoint(sessionId, pointId, label, x, y, lux);
+    }
+    return true;
+  }
+
+  public async getSpatialPoints(sessionId: string = 'default'): Promise<any[]> {
+    if (this.backendObj?.getSpatialPoints) {
+      const res = await this.backendObj.getSpatialPoints(sessionId);
+      return JSON.parse(res);
+    }
+    return [
+      { point_id: "P1", label: "Desk Left", x_m: 0.0, y_m: 0.0, measured_lux: 512.4, timestamp: "10:14:02" },
+      { point_id: "P2", label: "Desk Center", x_m: 0.6, y_m: 0.0, measured_lux: 554.8, timestamp: "10:14:15" },
+      { point_id: "P3", label: "Desk Right", x_m: 1.2, y_m: 0.0, measured_lux: 538.1, timestamp: "10:14:30" },
+      { point_id: "P4", label: "Rear Wall", x_m: 0.6, y_m: 1.0, measured_lux: 489.2, timestamp: "10:14:45" }
+    ];
+  }
+
+  public async clearSpatialPoints(sessionId: string = 'default'): Promise<boolean> {
+    if (this.backendObj?.clearSpatialPoints) {
+      return await this.backendObj.clearSpatialPoints(sessionId);
+    }
+    return true;
+  }
+
+  public async getUniformityReport(sessionId: string = 'default'): Promise<any> {
+    if (this.backendObj?.getUniformityReport) {
+      const res = await this.backendObj.getUniformityReport(sessionId);
+      return JSON.parse(res);
+    }
+    return {
+      points_count: 4,
+      min_lux: 489.2,
+      max_lux: 554.8,
+      average_lux: 523.6,
+      uniformity_u1: 0.934,
+      uniformity_u2: 0.882,
+      diversity_ratio: 1.13,
+      en12464_compliant: true,
+      summary: "Compliant with EN 12464-1 (U1 = 0.93 >= 0.60). High spatial lighting uniformity."
+    };
+  }
+
+  public async createExperimentSession(sessionId: string, name: string, operator: string, lightingType: string, minTh: number, maxTh: number, notes: string): Promise<boolean> {
+    if (this.backendObj?.createExperimentSession) {
+      return await this.backendObj.createExperimentSession(sessionId, name, operator, lightingType, minTh, maxTh, notes);
+    }
+    return true;
+  }
+
+  public async listExperimentSessions(): Promise<any[]> {
+    if (this.backendObj?.listExperimentSessions) {
+      const res = await this.backendObj.listExperimentSessions();
+      return JSON.parse(res);
+    }
+    return [
+      {
+        session_id: "default",
+        name: "Standard Laboratory Baseline",
+        operator: "DevPro Metrologist",
+        lighting_type: "Broadband Ambient (LED/Daylight)",
+        created_at: "2026-11-15 10:00:00",
+        min_threshold: 300.0,
+        max_threshold: 750.0,
+        notes: "Baseline calibration and repeatability evaluation."
+      }
+    ];
+  }
+
+  public async exportScientificReport(sessionId: string = 'default', formatType: string = 'csv'): Promise<string> {
+    if (this.backendObj?.exportScientificReport) {
+      return await this.backendObj.exportScientificReport(sessionId, formatType);
+    }
+    return `LuxSense_Scientific_Report_${sessionId}.${formatType}`;
+  }
+
+  public async getSerialLatency(): Promise<number> {
+    if (this.backendObj?.getSerialLatency) {
+      return await this.backendObj.getSerialLatency();
+    }
+    return 1.4;
+  }
+
   public minimize(): void {
     if (this.backendObj?.minimizeWindow) this.backendObj.minimizeWindow();
   }
@@ -356,3 +478,4 @@ class BridgeClient {
 }
 
 export const bridge = new BridgeClient();
+

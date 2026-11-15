@@ -382,3 +382,4 @@ export const CalibrationLaboratory: React.FC<CalibrationLaboratoryProps> = ({
     </div>
   );
 };
+

@@ -1,4 +1,4 @@
 # LuxSense Pro Release Checksums (SHA-256)
-893ca6eb1b86b14dc86988c0d04794fdc774135fbbbab1cbe180e527df7fb863  LuxSense-Pro-Setup-v2.1.0.exe
-1b2fe34fe50173634ac150f8564a4f4ba5210a9808c8ecc5376fbcf4bedb8d1e  LuxSense-Pro-v2.1.0-portable.zip
-5e419a43ec5c30508e547b1d89f1362689c39e1365069984302a70cae1e711b1  updater.exe
+d9e53860947444ba0a37581796d36ec3b7e2afb99e58a27938254a33f2f29fc4  LuxSense-Pro-Setup-v2.1.0.exe
+99c1c0168096830efbf08380ccc1af984b3f5e599017c14a50d9366ee6fea8c4  LuxSense-Pro-v2.1.0-portable.zip
+42eae82758050c66de77f7792b654f8841a221687f9afc5a1540a81d1b728756  updater.exe

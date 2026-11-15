@@ -1,5 +1,6 @@
 export type WorkspaceTab = 
   | 'monitor' 
+  | 'scientific'
   | 'analytics' 
   | 'calibration' 
   | 'settings' 
@@ -35,6 +36,7 @@ export interface UserSettings {
 export interface TelemetryRecord {
   id?: number;
   timestamp: string;
+  session_id?: string;
   packet_id: number;
   raw_lux: number;
   calibrated_lux: number;
@@ -49,6 +51,63 @@ export interface StatisticalSummary {
   median: number;
   crestFactor: number;
   sampleCount: number;
+}
+
+export interface UncertaintyBudget {
+  sample_mean: number;
+  standard_deviation: number;
+  standard_error: number;
+  degrees_of_freedom: number;
+  sensor_accuracy_spec_percent: number;
+  sensor_uncertainty_lux: number;
+  repeatability_uncertainty_lux: number;
+  combined_standard_uncertainty: number;
+  expanded_uncertainty_95: number;
+  relative_expanded_uncertainty_pct: number;
+}
+
+export interface ExposureReport {
+  total_duration_seconds: number;
+  duration_hours: number;
+  cumulative_lux_seconds: number;
+  cumulative_lux_hours: number;
+  average_lux: number;
+  daily_projected_lux_hours: number;
+  annual_projected_lux_hours: number;
+  cie157_conservation_status: string;
+}
+
+export interface SpatialMeasurementPoint {
+  point_id: string;
+  session_id?: string;
+  label: string;
+  x_m: number;
+  y_m: number;
+  measured_lux: number;
+  timestamp: string;
+}
+
+export interface UniformityReport {
+  points_count: number;
+  min_lux: number;
+  max_lux: number;
+  average_lux: number;
+  uniformity_u1: number;
+  uniformity_u2: number;
+  diversity_ratio: number;
+  en12464_compliant: boolean;
+  summary: string;
+}
+
+export interface ExperimentSession {
+  session_id: string;
+  name: string;
+  operator: string;
+  lighting_type: string;
+  created_at: string;
+  min_threshold: number;
+  max_threshold: number;
+  notes: string;
 }
 
 export interface UpdateInfo {

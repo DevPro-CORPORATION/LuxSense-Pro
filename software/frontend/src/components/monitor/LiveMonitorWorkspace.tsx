@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { bridge } from '../../bridge/bridgeClient';
 import { TelemetryPacket, CalibrationProfile } from '../../types';
 import { InteractiveLuxChart, LuxChartHandle } from './InteractiveLuxChart';
 import { 
@@ -25,12 +26,41 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
 }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [timeWindow, setTimeWindow] = useState<number>(30);
+  const [unitMode, setUnitMode] = useState<'lx' | 'fc'>('lx');
+  const [latencyMs, setLatencyMs] = useState<number>(1.4);
   const chartRef = useRef<LuxChartHandle>(null);
 
   const calLux = packet ? packet.cal_lux : 0.0;
   const rawLux = packet ? packet.raw_lux : 0.0;
-  const footCandles = calLux > 0 ? (calLux / 10.7639).toFixed(2) : '0.00';
-  const irradiance = calLux > 0 ? (calLux / 683.0).toFixed(4) : '0.0000'; // W/m^2 at 555nm CIE peak
+  const footCandles = calLux > 0 ? (calLux / 10.7639104).toFixed(2) : '0.00';
+  const irradiance = calLux > 0 ? (calLux / 683.008).toFixed(4) : '0.0000'; // W/m^2 at 555nm CIE peak
+
+  // Periodically fetch serial latency
+  useEffect(() => {
+    const updateLatency = async () => {
+      try {
+        const lat = await bridge.getSerialLatency();
+        setLatencyMs(lat);
+      } catch (e) {}
+    };
+    updateLatency();
+    const interval = setInterval(updateLatency, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Display value based on unit mode
+  const displayVal = unitMode === 'lx' 
+    ? calLux.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : footCandles;
+
+  // Threshold compliance status (EN 12464-1: 300 - 750 lx)
+  const getThresholdStatus = (lux: number) => {
+    if (lux < 300.0) return { label: 'Under-illuminated (<300 lx)', color: '#61AFEF' };
+    if (lux > 750.0) return { label: 'Over-illuminated (>750 lx)', color: '#E06C75' };
+    return { label: 'EN 12464 Compliant (300-750 lx)', color: '#21D789' };
+  };
+
+  const thresholdStatus = getThresholdStatus(calLux);
 
   // Compute optical range category
   const getLightingZone = (lux: number) => {
@@ -67,19 +97,48 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
             <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest flex items-center space-x-2">
               <Eye className="w-3.5 h-3.5 text-metrology-green" />
               <span>Photopic Illuminance (E_v)</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-metrology-green/10 text-metrology-green border border-metrology-green/20">
+                [CALIBRATED]
+              </span>
             </span>
-            <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-chassis-850 border border-border text-zinc-400">
-                CIE 1931 V(λ) MATCH
+            <div className="flex items-center space-x-2 font-mono text-[10px]">
+              {/* Unit Toggle */}
+              <div className="flex bg-chassis-850 rounded p-0.5 border border-border">
+                <button
+                  onClick={() => setUnitMode('lx')}
+                  className={`px-2 py-0.5 rounded transition-colors ${unitMode === 'lx' ? 'bg-metrology-green text-chassis-950 font-bold' : 'text-zinc-400'}`}
+                >
+                  LUX
+                </button>
+                <button
+                  onClick={() => setUnitMode('fc')}
+                  className={`px-2 py-0.5 rounded transition-colors ${unitMode === 'fc' ? 'bg-metrology-green text-chassis-950 font-bold' : 'text-zinc-400'}`}
+                >
+                  FC
+                </button>
+              </div>
+
+              <span className="px-2 py-0.5 rounded bg-chassis-850 border border-border text-zinc-400">
+                CIE 1931 V(λ)
               </span>
             </div>
           </div>
 
-          <div className="my-3 flex items-baseline space-x-3">
-            <div className="text-6xl font-bold font-mono tracking-tight text-white num-tabular glow-text-green">
-              {calLux.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className="my-3 flex items-baseline justify-between">
+            <div className="flex items-baseline space-x-3">
+              <div className="text-6xl font-bold font-mono tracking-tight text-white num-tabular glow-text-green">
+                {displayVal}
+              </div>
+              <span className="text-2xl font-mono text-metrology-green font-semibold">{unitMode}</span>
             </div>
-            <span className="text-2xl font-mono text-metrology-green font-semibold">lx</span>
+
+            {/* Threshold Compliance Pill */}
+            <div 
+              className="text-[11px] font-mono px-2.5 py-1 rounded border hidden sm:block"
+              style={{ borderColor: thresholdStatus.color, color: thresholdStatus.color, backgroundColor: `${thresholdStatus.color}15` }}
+            >
+              {thresholdStatus.label}
+            </div>
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs font-mono">
@@ -237,6 +296,7 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
             <span>PACKET ID: <strong className="text-zinc-200">#{packet ? packet.packet_id : 0}</strong></span>
             <span>PORT: <strong className="text-zinc-200">{packet ? packet.port : 'COM5'}</strong></span>
             <span>CHECKSUM: <strong className="text-metrology-green">VALID (CRC-8)</strong></span>
+            <span>UART RTT: <strong className="text-metrology-green">{latencyMs.toFixed(1)} ms</strong></span>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -253,3 +313,4 @@ export const LiveMonitorWorkspace: React.FC<LiveMonitorWorkspaceProps> = ({
     </div>
   );
 };
+

@@ -245,3 +245,4 @@ export const InteractiveLuxChart = forwardRef<LuxChartHandle, InteractiveLuxChar
 });
 
 InteractiveLuxChart.displayName = 'InteractiveLuxChart';
+

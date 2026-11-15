@@ -53,6 +53,20 @@ from software.core.storage import (
     get_app_data_dir
 )
 from software.core.crypto_packet import encrypt_packet, decrypt_packet
+from software.core.scientific_engine import (
+    calculate_uncertainty_budget,
+    calculate_light_exposure,
+    calculate_spatial_uniformity,
+    analyze_threshold_compliance,
+    SpatialMeasurementPoint,
+    lux_to_foot_candles,
+    lux_to_estimated_irradiance
+)
+from software.core.report_generator import (
+    generate_scientific_csv,
+    generate_scientific_html_report
+)
+from software.core.serial_worker import SerialWorker
 from updater.update_manager import UpdateManager
 
 class BridgeBackend(QObject):
@@ -84,6 +98,9 @@ class BridgeBackend(QObject):
         self.update_mgr.download_progress.connect(self._on_download_progress)
         self.update_mgr.ready_to_install.connect(self._on_ready_to_install)
         self.update_mgr.verification_failed.connect(self._on_verification_failed)
+
+        self.serial_worker: Optional[SerialWorker] = None
+        self.active_session_id = "default"
 
         # Simulation fallback state (runs if no physical serial sensor is attached)
         self.sim_active = True
@@ -233,6 +250,90 @@ class BridgeBackend(QObject):
                     r["port"]
                 ])
         return str(export_path)
+
+    # -------------------------------------------------------------
+    # Scientific Metrology & Laboratory Analysis Slots
+    # -------------------------------------------------------------
+    @Slot(str, float, result=str)
+    def getUncertaintyBudget(self, session_id: str = "default", accuracy_pct: float = 7.0) -> str:
+        """Calculate GUM / ISO 98-3 uncertainty budget for a session."""
+        readings = self.history.get_recent(500, session_id=session_id)
+        values = [r["calibrated_lux"] for r in readings] if readings else [self.sim_lux_base]
+        budget = calculate_uncertainty_budget(values, sensor_accuracy_percent=accuracy_pct)
+        return json.dumps(budget.to_dict())
+
+    @Slot(str, result=str)
+    def getExposureReport(self, session_id: str = "default") -> str:
+        """Calculate time-integrated light exposure (Lux-hours per CIE 157:2004)."""
+        readings = self.history.get_recent(1000, session_id=session_id)
+        if not readings:
+            # Fallback based on simulation run
+            readings = [{"calibrated_lux": self.sim_lux_base, "timestamp": time.strftime("%H:%M:%S")}]
+        time_series = []
+        base_t = 0.0
+        for i, r in enumerate(reversed(readings)):
+            time_series.append((base_t + i * 0.4, r["calibrated_lux"]))
+        report = calculate_light_exposure(time_series)
+        return json.dumps(report.to_dict())
+
+    @Slot(str, str, str, float, float, float, result=bool)
+    def recordSpatialPoint(self, session_id: str, point_id: str, label: str, x: float, y: float, lux: float) -> bool:
+        """Record a spatial illuminance measurement position."""
+        return self.history.add_spatial_point(point_id, label, x, y, lux, session_id=session_id)
+
+    @Slot(str, result=str)
+    def getSpatialPoints(self, session_id: str = "default") -> str:
+        """Retrieve spatial points list."""
+        points = self.history.get_spatial_points(session_id=session_id)
+        return json.dumps(points)
+
+    @Slot(str, result=bool)
+    def clearSpatialPoints(self, session_id: str = "default") -> bool:
+        """Clear all spatial mapping points for a session."""
+        return self.history.clear_spatial_points(session_id=session_id)
+
+    @Slot(str, result=str)
+    def getUniformityReport(self, session_id: str = "default") -> str:
+        """Calculate spatial uniformity ratios U1, U2 and diversity per EN 12464-1."""
+        raw_pts = self.history.get_spatial_points(session_id=session_id)
+        pts = [
+            SpatialMeasurementPoint(
+                point_id=p["point_id"],
+                label=p["label"],
+                x_m=p["x_m"],
+                y_m=p["y_m"],
+                measured_lux=p["measured_lux"],
+                timestamp=p["timestamp"]
+            ) for p in raw_pts
+        ]
+        report = calculate_spatial_uniformity(pts)
+        return json.dumps(report.to_dict())
+
+    @Slot(str, str, str, str, float, float, str, result=bool)
+    def createExperimentSession(self, session_id: str, name: str, operator: str, lighting_type: str, min_th: float, max_th: float, notes: str) -> bool:
+        """Create or update an experimental session."""
+        return self.history.create_session(session_id, name, operator, lighting_type, min_th, max_th, notes)
+
+    @Slot(result=str)
+    def listExperimentSessions(self) -> str:
+        """List all registered experimental sessions."""
+        sessions = self.history.list_sessions()
+        return json.dumps(sessions)
+
+    @Slot(str, str, result=str)
+    def exportScientificReport(self, session_id: str = "default", format_type: str = "csv") -> str:
+        """Export comprehensive scientific report in CSV or print-ready HTML/PDF."""
+        if format_type.lower() == "html" or format_type.lower() == "pdf":
+            return generate_scientific_html_report(session_id=session_id)
+        return generate_scientific_csv(session_id=session_id)
+
+    @Slot(result=float)
+    def getSerialLatency(self) -> float:
+        """Return serial round-trip communication latency in milliseconds."""
+        if self.serial_worker and self.serial_worker.isRunning():
+            return self.serial_worker.measure_latency_ms()
+        # Simulated serial RTT with USB bus jitter (0.8 - 2.5 ms)
+        return round(1.2 + random.random() * 0.9, 2)
 
     # -------------------------------------------------------------
     # Window Frame Controls

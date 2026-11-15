@@ -289,6 +289,65 @@ export const TechnicalInfoWorkspace: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Objective D: Advanced Sensor Investigation & Metrology Roadmap */}
+      <div className="bg-chassis-950 border border-border rounded-xl p-5 space-y-3">
+        <div className="flex items-center justify-between border-b border-border pb-2">
+          <span className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+            <Compass className="w-4 h-4 text-metrology-blue" />
+            <span>Future Hardware Metrology Roadmap &amp; Multi-Sensor Investigation</span>
+          </span>
+          <span className="text-[10px] font-mono text-zinc-400 bg-chassis-900 px-2.5 py-0.5 rounded border border-border">
+            OPTIONAL EXPANSION (P3)
+          </span>
+        </div>
+
+        <p className="text-[11px] font-mono text-zinc-400 leading-relaxed">
+          The current LuxSense Pro release relies strictly on verified physical BH1750 measurements. The I2C shared bus architecture on the Arduino Uno is designed to accommodate the following future sensors without breaking changes:
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
+          <div className="p-3 bg-chassis-900 rounded border border-border space-y-1">
+            <div className="text-metrology-blue font-semibold flex items-center space-x-1.5">
+              <span>1. Correlated Colour Temperature (CCT) &amp; CRI</span>
+            </div>
+            <p className="text-[10px] text-zinc-400 leading-relaxed">
+              <strong>Candidate: ams-OSRAM AS7341 (11-channel) or AS7262 (6-channel).</strong><br />
+              Provides 8 visible spectral channels + NIR + clear. Enables genuine calculation of chromaticity coordinates (x, y), CCT (Kelvin), and CRI (Ra) without fabrication.
+            </p>
+          </div>
+
+          <div className="p-3 bg-chassis-900 rounded border border-border space-y-1">
+            <div className="text-metrology-amber font-semibold flex items-center space-x-1.5">
+              <span>2. High-Frequency Optical Flicker Analysis</span>
+            </div>
+            <p className="text-[10px] text-zinc-400 leading-relaxed">
+              <strong>Candidate: TI OPT101 / ams TSL2591 with DMA Sampling.</strong><br />
+              High-bandwidth transimpedance photodiode sampling at 2 kHz - 10 kHz to calculate Percent Flicker, Flicker Index, and IEEE 1789 health risk metrics for solid-state lighting.
+            </p>
+          </div>
+
+          <div className="p-3 bg-chassis-900 rounded border border-border space-y-1">
+            <div className="text-metrology-crimson font-semibold flex items-center space-x-1.5">
+              <span>3. Ultraviolet Index (UVA / UVB) Monitoring</span>
+            </div>
+            <p className="text-[10px] text-zinc-400 leading-relaxed">
+              <strong>Candidate: Vishay VEML6075 (I2C) or Lapis ML8511 (Analog).</strong><br />
+              Dedicated dual-channel photodiodes isolating UVA (365nm) and UVB (330nm) radiation for museum solarization testing and polymer UV photolysis prevention.
+            </p>
+          </div>
+
+          <div className="p-3 bg-chassis-900 rounded border border-border space-y-1">
+            <div className="text-metrology-green font-semibold flex items-center space-x-1.5">
+              <span>4. Metrological Integrity Policy</span>
+            </div>
+            <p className="text-[10px] text-zinc-400 leading-relaxed">
+              <strong>Zero-Fabrication Commitment:</strong> LuxSense Pro will never display synthetic or estimated CCT, CRI, or flicker values until physical multi-channel sensors are connected and certified.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
+

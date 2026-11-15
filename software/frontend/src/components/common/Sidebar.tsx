@@ -2,6 +2,7 @@ import React from 'react';
 import { WorkspaceTab } from '../../types';
 import { 
   Gauge, 
+  Microscope,
   BarChart3, 
   Sliders, 
   Settings, 
@@ -24,6 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navItems = [
     { id: 'monitor' as WorkspaceTab, label: 'Live Monitor', icon: Gauge, hint: 'Photopic acquisition' },
+    { id: 'scientific' as WorkspaceTab, label: 'Scientific Lab', icon: Microscope, hint: 'Uncertainty & Spatial' },
     { id: 'analytics' as WorkspaceTab, label: 'Analytics Lab', icon: BarChart3, hint: 'Spectral distributions' },
     { id: 'calibration' as WorkspaceTab, label: 'Calibration', icon: Sliders, hint: 'Gain & dark offset' },
     { id: 'settings' as WorkspaceTab, label: 'Settings & Update', icon: Settings, hint: 'GitHub CI/CD Channel', badge: updateAvailable },
@@ -99,3 +101,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
+

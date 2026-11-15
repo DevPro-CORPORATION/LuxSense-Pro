@@ -8,10 +8,13 @@ __pycache__/
 .pytest_cache/
 
 # PyInstaller & Build intermediates
-build/
+/build/
 LuxSensePro.spec
 script.spec
+updater/build/
 updater_bootstrapper/build/
+!firmware/build/
+
 
 # IDE configurations
 .idea/
@@ -31,3 +34,5 @@ software/frontend/.vite/
 dist/
 dist_installer/*.exe
 dist_installer/*.zip
+tools/
+

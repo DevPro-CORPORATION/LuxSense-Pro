@@ -6,6 +6,7 @@ import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { StartupPOST } from './components/common/StartupPOST';
 import { LiveMonitorWorkspace } from './components/monitor/LiveMonitorWorkspace';
+import { ScientificWorkspace } from './components/scientific/ScientificWorkspace';
 import { AnalyticsWorkspace } from './components/analytics/AnalyticsWorkspace';
 import { CalibrationLaboratory } from './components/calibration/CalibrationLaboratory';
 import { SettingsWorkspace } from './components/settings/SettingsWorkspace';
@@ -97,6 +98,12 @@ export const App: React.FC = () => {
                 />
               )}
 
+              {currentTab === 'scientific' && (
+                <ScientificWorkspace 
+                  currentPacket={currentPacket}
+                />
+              )}
+
               {currentTab === 'analytics' && (
                 <AnalyticsWorkspace />
               )}
@@ -129,3 +136,4 @@ export const App: React.FC = () => {
   );
 };
 export default App;
+
